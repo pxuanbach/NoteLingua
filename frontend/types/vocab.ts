@@ -18,6 +18,12 @@ export interface Vocab {
   examples?: string[];
   review_history?: ReviewHistory[];
   created_at: Date;
+  document?: {
+    _id: string;
+    file_name: string;
+    file_hash: string;
+    created_at: string;
+  };
 }
 
 export interface CreateVocabRequest {

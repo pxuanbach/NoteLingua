@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -7,9 +6,10 @@ require('dotenv').config();
 
 // Import configurations
 const { NODE_ENV, PORT } = require('./config/app.config');
-const { MONGODB_URI } = require('./config/database.config');
 const { swaggerSpec, swaggerUi } = require('./config/swagger.config');
-const { UPLOADS_DIR } = require('./config/upload.config');
+
+// Import infrastructure
+const { database, storage } = require('./infrastructure');
 
 // Import routers
 const authRouter = require('./routers/auth.router');
@@ -49,16 +49,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files
-app.use('/uploads', express.static(UPLOADS_DIR));
+app.use('/uploads', express.static(storage.UPLOADS_DIR));
 
-// MongoDB connection (only if not in test environment)
+// Database connection with auto-reconnect (only if not in test environment)
 if (process.env.NODE_ENV !== 'test') {
-  mongoose.connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-    .then(() => console.log('✅ Connected to MongoDB'))
-    .catch((error) => console.error('❌ MongoDB connection error:', error));
+  storage.ensureUploadsDirectory();
+  database.setupConnectionListeners();
+  database.connectWithRetry();
 }
 
 // Routes
@@ -81,11 +78,26 @@ app.get('/api/openapi.json', (req, res) => {
   res.send(swaggerSpec);
 });
 
+// Database connection status endpoint
+app.get('/api/health/db', (req, res) => {
+  const status = database.getConnectionStatus();
+  res.status(status.isConnected ? 200 : 503).json({
+    status: status.isConnected ? 'Connected' : 'Disconnected',
+    details: status,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    message: 'NoteLingua Backend API is running',
+  const dbStatus = database.getConnectionStatus();
+  res.status(dbStatus.isConnected ? 200 : 503).json({
+    status: dbStatus.isConnected ? 'OK' : 'Database Disconnected',
+    message: 'NoteLingua Backend API Status',
+    database: {
+      connected: dbStatus.isConnected,
+      readyState: dbStatus.readyState,
+    },
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });

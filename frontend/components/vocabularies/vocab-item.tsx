@@ -138,13 +138,27 @@ export function VocabItem({ vocab, onEdit, onDelete, onReview }: Props) {
             {/* Metadata Section */}
             <div className="text-sm text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-4 mb-2">
-                {vocab.source && (
-                  <div className="flex items-center gap-1">
+                {(vocab.document?.file_name || vocab.source) && (
+                  <div className="flex items-center gap-1 min-w-0 flex-1">
                     <span>📄</span>
-                    <span className="truncate">{vocab.source}</span>
+                    <span
+                      className="truncate max-w-[200px] cursor-default"
+                      title={vocab.document?.file_name || vocab.source || ''}
+                    >
+                      {vocab.document?.file_name || vocab.source}
+                    </span>
+                    {vocab.document && (
+                      <button
+                        onClick={() => window.open(`/imports/${vocab.document?._id}`, '_blank')}
+                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0 cursor-pointer"
+                        title="Open document in new tab"
+                      >
+                        <span className="text-xs">🔗</span>
+                      </button>
+                    )}
                   </div>
                 )}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <span>📅</span>
                   <span>{formatDate(vocab.created_at)}</span>
                 </div>
