@@ -1,0 +1,22 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.router.js": "$(capture).router.doc.js",
+    "*.service.js": "$(capture).service.test.js",
+    "*.model.js": "$(capture).model.test.js",
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml",
+    "*.js": "$(capture).test.js, $(capture).spec.js",
+    "*.ts": "$(capture).test.ts, $(capture).spec.ts, $(capture).d.ts",
+    "docker-compose.yml": "docker-compose.*.yml, Dockerfile*",
+    "README.md": "CHANGELOG.md, CONTRIBUTING.md, LICENSE*"
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
