@@ -1,22 +1,10 @@
 const express = require('express');
-const { body, query, validationResult } = require('express-validator');
+const { body, query } = require('express-validator');
 const { authenticateToken, authorizeRoles } = require('../middlewares/auth.middleware');
 const usersService = require('../services/users.service');
+const { handleValidationErrors } = require('../middlewares/validation.middleware');
 
 const router = express.Router();
-
-// Helper function to handle validation errors
-const handleValidationErrors = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Validation Error',
-      message: 'Please check your input data',
-      details: errors.array()
-    });
-  }
-  next();
-};
 
 // @route   GET /api/users/profile
 // @desc    Get current user profile
@@ -64,7 +52,7 @@ router.put('/profile',
     try {
       // Check if this is an admin update
       const isAdminUpdate = req.user.role === 'admin';
-      
+
       // Remove email from request body if user is not admin
       if (req.body.email && !isAdminUpdate) {
         return res.status(403).json({

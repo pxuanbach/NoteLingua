@@ -86,9 +86,7 @@ export function VocabulariesTemplate({ data, pagination }: Props) {
               Manage your vocabulary collection and track your learning progress.
             </p>
           </div>
-          <Button onClick={handleOpenModal} className="px-6 py-2">
-            Add New Vocabulary
-          </Button>
+          <Button onClick={handleOpenModal}>Add New Vocabulary</Button>
         </div>
       </div>
 

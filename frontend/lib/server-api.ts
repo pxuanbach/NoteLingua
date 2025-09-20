@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { cookies } from 'next/headers';
 import {
   User,
@@ -19,35 +19,37 @@ import {
   VocabQueryParams,
   UpdateVocabRequest,
 } from '@/types';
-import { makePaginatedRequestWrapper, makeRequestWrapper } from './utils';
+import { makePaginatedRequestWrapper, makeRequestWrapper, refreshTokenInterceptor } from './utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+let axiosInstance: AxiosInstance;
+
 // Create axios instance for server-side requests
 const createServerApiClient = async (forcedToken?: string): Promise<AxiosInstance> => {
-  const client = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    validateStatus: (status) => {
-      // Accept all status codes to prevent axios from throwing errors
-      return status >= 200 && status < 500;
-    },
-  });
+  if (!axiosInstance) {
+    axiosInstance = axios.create({
+      baseURL: API_BASE_URL,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    await refreshTokenInterceptor(axiosInstance);
+  }
 
   if (forcedToken) {
-    client.defaults.headers.common['Authorization'] = `Bearer ${forcedToken}`;
+    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${forcedToken}`;
 
-    return client;
+    return axiosInstance;
   }
 
   const token = await serverApi.getToken();
   if (token) {
-    client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }
 
-  return client;
+  return axiosInstance;
 };
 
 // Server-side API functions
@@ -84,9 +86,25 @@ export const serverApi = {
 
     refresh: async (): Promise<ApiResponse<AuthData>> => {
       const refreshToken = await serverApi.getToken('refresh_token');
-      const client = await createServerApiClient(refreshToken);
-      const response = await makeRequestWrapper<AuthData>(() => client.post('/api/auth/refresh'));
-      return response;
+
+      if (!refreshToken) {
+        return {
+          success: false,
+          message: 'No refresh token available',
+          data: null as any,
+        };
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${refreshToken}`,
+        },
+      });
+
+      const data = await response.json();
+      return data;
     },
   },
 

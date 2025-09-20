@@ -10,3 +10,4 @@ export { EmptyState } from './empty-state';
 export { Modal } from './modal';
 export { Alert } from './alert';
 export { ConfirmModal } from './confirm-modal';
+export { FloatingButton } from './floating-button';

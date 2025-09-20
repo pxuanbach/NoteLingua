@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const crypto = require('crypto');
 
 const documentSchema = new mongoose.Schema({
-  user_id: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: [true, 'User ID is required'],
@@ -44,8 +44,8 @@ documentSchema.statics.findByHash = function (fileHash) {
 };
 
 // Compound indexes for performance
-documentSchema.index({ user_id: 1, created_at: -1 });
-documentSchema.index({ user_id: 1, file_hash: 1 }, { unique: true }); // Ensure unique per user
+documentSchema.index({ user: 1, created_at: -1 });
+documentSchema.index({ user: 1, file_hash: 1 }, { unique: true }); // Ensure unique per user
 documentSchema.index({ file_hash: 1 });
 
 module.exports = mongoose.model('Document', documentSchema);

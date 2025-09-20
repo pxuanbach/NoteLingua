@@ -1,6 +1,6 @@
 const Document = require('../models/documents.model');
 const Vocabulary = require('../models/vocabs.model');
-const path = require('path');
+const User = require('../models/users.model');
 
 // Import/Upload document
 const importDocument = async (file, userId) => {
@@ -10,7 +10,7 @@ const importDocument = async (file, userId) => {
   // Check if document already exists for this user
   const existingDoc = await Document.findOne({
     file_hash: fileHash,
-    user_id: userId
+    user: userId
   });
 
   if (existingDoc) {
@@ -26,7 +26,7 @@ const importDocument = async (file, userId) => {
 
   // Create new document entry for this user
   const document = new Document({
-    user_id: userId,
+    user: userId,
     file_hash: fileHash,
     file_name: file.filename
   });
@@ -55,7 +55,7 @@ const getUserDocuments = async (userId, query = {}) => {
     search
   } = query;
 
-  const filter = { user_id: userId };
+  const filter = { user: userId };
 
   if (search) {
     filter.file_name = { $regex: search, $options: 'i' };
@@ -87,7 +87,7 @@ const getUserDocuments = async (userId, query = {}) => {
 const deleteDocument = async (fileHash, userId) => {
   const document = await Document.findOne({
     file_hash: fileHash,
-    user_id: userId
+    user: userId
   });
 
   if (!document) {
@@ -96,7 +96,7 @@ const deleteDocument = async (fileHash, userId) => {
 
   // Also delete related vocabulary entries
   await Vocabulary.deleteMany({
-    user_id: userId,
+    user: userId,
     source: document._id.toString(),
     source_type: 'document'
   });
@@ -108,7 +108,7 @@ const deleteDocument = async (fileHash, userId) => {
 // Search documents by word in notes
 const searchDocumentsByWord = async (userId, word) => {
   const documents = await Document.find({
-    user_id: userId,
+    user: userId,
     'notes.word': { $regex: word.toLowerCase(), $options: 'i' }
   }).select('file_hash file_name notes created_at');
 
@@ -131,7 +131,7 @@ const searchDocumentsByWord = async (userId, word) => {
 
 // Get document statistics
 const getDocumentStats = async (userId, timeframe = 'all') => {
-  const matchFilter = { user_id: userId };
+  const matchFilter = { user: userId };
 
   // Add date filter based on timeframe
   if (timeframe !== 'all') {
@@ -173,7 +173,7 @@ const getDocumentStats = async (userId, timeframe = 'all') => {
   const recentActivity = await Document.aggregate([
     {
       $match: {
-        user_id: userId,
+        user: userId,
         created_at: {
           $gte: new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000)
         }
@@ -206,7 +206,6 @@ const getDocumentStats = async (userId, timeframe = 'all') => {
 // Admin: Get document statistics for a specific user
 const getDocumentStatsByAdmin = async (targetUserId, timeframe = 'all') => {
   // Validate target user exists
-  const User = require('../models/users.model');
   const targetUser = await User.findById(targetUserId);
   if (!targetUser) {
     throw new Error('Target user not found');
@@ -230,7 +229,7 @@ const getAllUsersDocumentOverview = async () => {
   const overview = await Document.aggregate([
     {
       $group: {
-        _id: '$user_id',
+        _id: '$user',
         totalDocuments: { $sum: 1 },
         totalNotes: { $sum: { $size: '$notes' } },
         lastActivity: { $max: '$created_at' }
@@ -269,7 +268,7 @@ const getAllUsersDocumentOverview = async () => {
 const deleteDocumentByAdmin = async (fileHash, targetUserId) => {
   const document = await Document.findOne({
     file_hash: fileHash,
-    user_id: targetUserId
+    user: targetUserId
   });
 
   if (!document) {
@@ -278,7 +277,7 @@ const deleteDocumentByAdmin = async (fileHash, targetUserId) => {
 
   // Delete related vocabulary entries
   await Vocabulary.deleteMany({
-    user_id: targetUserId,
+    user: targetUserId,
     source: document._id.toString(),
     source_type: 'document'
   });
@@ -291,7 +290,7 @@ const deleteDocumentByAdmin = async (fileHash, targetUserId) => {
 const getDocumentById = async (documentId, userId) => {
   const document = await Document.findOne({
     _id: documentId,
-    user_id: userId
+    user: userId
   });
 
   if (!document) {
@@ -305,7 +304,7 @@ const getDocumentById = async (documentId, userId) => {
 const deleteDocumentById = async (documentId, userId) => {
   const document = await Document.findOne({
     _id: documentId,
-    user_id: userId
+    user: userId
   });
 
   if (!document) {

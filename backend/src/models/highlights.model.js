@@ -1,22 +1,22 @@
 const mongoose = require('mongoose');
 
 const highlightSchema = new mongoose.Schema({
-  user_id: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'User ID is required'],
+    required: [true, 'User is required'],
     index: true
   },
-  vocab_id: {
+  vocab: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vocabulary',
-    required: [true, 'Vocabulary ID is required'],
+    required: [true, 'Vocabulary is required'],
     index: true
   },
-  document_id: {
+  document: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Document',
-    required: [true, 'Document ID is required'],
+    required: [true, 'Document is required'],
     index: true
   },
   file_hash: {
@@ -131,11 +131,11 @@ const highlightSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-highlightSchema.index({ user_id: 1, vocab_id: 1 });
-highlightSchema.index({ user_id: 1, document_id: 1 });
-highlightSchema.index({ user_id: 1, file_hash: 1 });
-highlightSchema.index({ vocab_id: 1 });
-highlightSchema.index({ document_id: 1 });
+highlightSchema.index({ user: 1, vocab: 1 });
+highlightSchema.index({ user: 1, document: 1 });
+highlightSchema.index({ user: 1, file_hash: 1 });
+highlightSchema.index({ vocab: 1 });
+highlightSchema.index({ document: 1 });
 highlightSchema.index({ created_at: -1 });
 
 // Pre-save middleware to update updated_at
@@ -154,8 +154,8 @@ highlightSchema.methods.updateHighlight = function (updateData) {
 // Static method to find highlights by document
 highlightSchema.statics.findByDocument = function (documentId, userId) {
   return this.find({
-    document_id: documentId,
-    user_id: userId
+    document: documentId,
+    user: userId
   }).sort({ created_at: -1 });
 };
 
@@ -163,14 +163,14 @@ highlightSchema.statics.findByDocument = function (documentId, userId) {
 highlightSchema.statics.findByFileHash = function (fileHash, userId) {
   return this.find({
     file_hash: fileHash,
-    user_id: userId
+    user: userId
   }).sort({ created_at: -1 });
 };
 
 // Static method to find highlights containing specific text
 highlightSchema.statics.findByText = function (userId, searchText) {
   return this.find({
-    user_id: userId,
+    user: userId,
     'content.text': { $regex: searchText, $options: 'i' }
   }).sort({ created_at: -1 });
 };
@@ -178,7 +178,7 @@ highlightSchema.statics.findByText = function (userId, searchText) {
 // Static method to find highlights by tags
 highlightSchema.statics.findByTags = function (userId, tags) {
   return this.find({
-    user_id: userId,
+    user: userId,
     tags: { $in: tags }
   }).sort({ created_at: -1 });
 };

@@ -79,7 +79,6 @@ export function PaginationControls({
           size="sm"
           onClick={() => handlePageClick(pageNum as number)}
           disabled={loading}
-          className="min-w-[40px]"
         >
           {pageNum}
         </Button>

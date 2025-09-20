@@ -1,4 +1,3 @@
-import { requireAuth } from '@/lib/auth';
 import { HomeDashboardTemplate } from '@/components/home';
 import { Vocab, Document } from '@/types';
 import { getUsersStatsAction } from '@/lib/actions/users';

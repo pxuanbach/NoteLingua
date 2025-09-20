@@ -1,15 +1,16 @@
-import { requireAuth } from '@/lib/auth';
-import { DocumentsTemplate, DocumentUpload } from '@/components/documents';
+import { DocumentsTemplate } from '@/components/documents/documents-template';
 import { getMyDocumentsAction } from '@/lib/actions/documents';
+import { SearchParams } from '@/types';
 
 interface ImportsPageProps {
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams?: Promise<SearchParams>;
 }
 
 export default async function ImportsPage({ searchParams }: ImportsPageProps) {
-  const page = Number((await searchParams)?.page) || 1;
-  const limit = Number((await searchParams)?.limit) || 10;
-  const search = String((await searchParams)?.search || '');
+  const searchData = await searchParams;
+  const page = Number(searchData?.page) || 1;
+  const limit = Number(searchData?.limit) || 10;
+  const search = String(searchData?.search || '');
 
   const { data, pagination } = await getMyDocumentsAction({
     page,
@@ -17,5 +18,5 @@ export default async function ImportsPage({ searchParams }: ImportsPageProps) {
     search,
   });
 
-  return <DocumentsTemplate data={data} pagination={pagination} />;
+  return <DocumentsTemplate searchData={searchData} data={data} pagination={pagination} />;
 }

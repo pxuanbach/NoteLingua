@@ -18,16 +18,10 @@ export function QuickActions() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Link href="/vocabularies" className="block">
-            <Button variant="outline" className="w-full justify-start">
-              📝 Manage Vocabularies
-            </Button>
+            <Button variant="outline">📝 Manage Vocabularies</Button>
           </Link>
-          <Button variant="outline" className="w-full justify-start">
-            📄 Import Document
-          </Button>
-          <Button variant="outline" className="w-full justify-start">
-            🎯 Practice Words
-          </Button>
+          <Button variant="outline">📄 Import Document</Button>
+          <Button variant="outline">🎯 Practice Words</Button>
         </CardContent>
       </Card>
 

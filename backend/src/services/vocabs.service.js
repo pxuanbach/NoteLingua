@@ -4,7 +4,7 @@ const Document = require('../models/documents.model');
 // Add new vocabulary
 const addVocabulary = async (vocabData) => {
   const {
-    user_id,
+    user,
     word,
     meaning,
     pronunciation_url,
@@ -15,7 +15,7 @@ const addVocabulary = async (vocabData) => {
   } = vocabData;
 
   const vocab = new Vocabulary({
-    user_id,
+    user,
     word: word.toLowerCase(),
     meaning,
     pronunciation_url,
@@ -39,7 +39,7 @@ const getUserVocabulary = async (userId, query) => {
     search
   } = query;
 
-  const filter = { user_id: userId };
+  const filter = { user: userId };
 
   // Apply filters
   if (tags) {
@@ -79,7 +79,7 @@ const getUserVocabulary = async (userId, query) => {
     // Find all documents in one query
     const documents = await Document.find({
       _id: { $in: documentIds },
-      user_id: userId
+      user: userId
     });
 
     // Create a map for quick lookup
@@ -121,7 +121,7 @@ const getUserVocabulary = async (userId, query) => {
 const getVocabularyById = async (vocabId, userId) => {
   const vocab = await Vocabulary.findOne({
     _id: vocabId,
-    user_id: userId
+    user: userId
   });
 
   if (!vocab) {
@@ -154,7 +154,7 @@ const getVocabularyById = async (vocabId, userId) => {
 const updateVocabulary = async (vocabId, userId, updateData) => {
   const vocab = await Vocabulary.findOne({
     _id: vocabId,
-    user_id: userId
+    user: userId
   });
 
   if (!vocab) {
@@ -181,7 +181,7 @@ const updateVocabulary = async (vocabId, userId, updateData) => {
 const deleteVocabulary = async (vocabId, userId) => {
   const vocab = await Vocabulary.findOne({
     _id: vocabId,
-    user_id: userId
+    user: userId
   });
 
   if (!vocab) {
@@ -196,7 +196,7 @@ const deleteVocabulary = async (vocabId, userId) => {
 const addReviewHistory = async (vocabId, userId, correct) => {
   const vocab = await Vocabulary.findOne({
     _id: vocabId,
-    user_id: userId
+    user: userId
   });
 
   if (!vocab) {
@@ -219,7 +219,7 @@ const getVocabularyBySource = async (userId, source) => {
 
 // Get vocabulary statistics
 const getVocabularyStats = async (userId, timeframe = 'all') => {
-  const matchFilter = { user_id: userId };
+  const matchFilter = { user: userId };
 
   // Add date filter based on timeframe
   if (timeframe !== 'all') {
@@ -271,7 +271,7 @@ const getVocabularyStats = async (userId, timeframe = 'all') => {
   const monthlyBreakdown = await Vocabulary.aggregate([
     {
       $match: {
-        user_id: userId,
+        user: userId,
         created_at: {
           $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
         }

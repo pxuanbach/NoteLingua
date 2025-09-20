@@ -3,25 +3,19 @@ import { cn } from '@/lib/utils';
 interface LoadingProps {
   size?: 'sm' | 'md' | 'lg';
   variant?: 'spinner' | 'dots' | 'pulse';
-  className?: string;
   text?: string;
 }
 
-export function Loading({ 
-  size = 'md', 
-  variant = 'spinner', 
-  className,
-  text 
-}: LoadingProps) {
+export function Loading({ size = 'md', variant = 'spinner', text }: LoadingProps) {
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-8 w-8',
-    lg: 'h-12 w-12'
+    lg: 'h-12 w-12',
   };
 
   if (variant === 'spinner') {
     return (
-      <div className={cn('flex flex-col items-center justify-center', className)}>
+      <div className="flex flex-col items-center justify-center">
         <svg
           className={cn('animate-spin text-primary', sizeClasses[size])}
           xmlns="http://www.w3.org/2000/svg"
@@ -49,7 +43,7 @@ export function Loading({
 
   if (variant === 'dots') {
     return (
-      <div className={cn('flex flex-col items-center justify-center', className)}>
+      <div className="flex flex-col items-center justify-center">
         <div className="flex space-x-1">
           <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]"></div>
           <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]"></div>
@@ -62,7 +56,7 @@ export function Loading({
 
   if (variant === 'pulse') {
     return (
-      <div className={cn('flex flex-col items-center justify-center', className)}>
+      <div className="flex flex-col items-center justify-center">
         <div className={cn('animate-pulse rounded-full bg-primary', sizeClasses[size])}></div>
         {text && <p className="mt-2 text-sm text-muted-foreground">{text}</p>}
       </div>

@@ -1,7 +1,8 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
+const { body } = require('express-validator');
 const authService = require('../services/auth.service');
 const { authenticateToken } = require('../middlewares/auth.middleware');
+const { handleValidationErrors } = require('../middlewares/validation.middleware');
 
 const router = express.Router();
 
@@ -35,19 +36,6 @@ const loginValidation = [
     .notEmpty()
     .withMessage('Password is required')
 ];
-
-// Helper function to handle validation errors
-const handleValidationErrors = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Validation Error',
-      message: 'Please check your input data',
-      details: errors.array()
-    });
-  }
-  next();
-};
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -98,7 +86,7 @@ router.post('/logout', authenticateToken, async (req, res) => {
     // In a JWT-based system, logout is mainly handled on the client side
     // Here we can log the logout event or perform cleanup
     await authService.logout(req.user.id);
-    
+
     res.json({
       success: true,
       message: 'Logout successful'
@@ -115,7 +103,7 @@ router.post('/logout', authenticateToken, async (req, res) => {
 // @route   PUT /api/auth/change-password
 // @desc    Change user password
 // @access  Private
-router.put('/change-password', 
+router.put('/change-password',
   authenticateToken,
   [
     body('currentPassword')
@@ -215,14 +203,14 @@ router.post('/refresh-token', async (req, res) => {
     // Extract refresh token from Authorization header
     const authHeader = req.headers['authorization'];
     const refreshToken = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-    
+
     if (!refreshToken) {
       return res.status(401).json({
         error: 'Token Refresh Failed',
         message: 'No refresh token provided'
       });
     }
-    
+
     const result = await authService.refreshToken(refreshToken);
     res.json({
       success: true,

@@ -1,32 +1,13 @@
 const express = require('express');
-const { body, query, validationResult } = require('express-validator');
+const { query } = require('express-validator');
 const { authenticateToken } = require('../middlewares/auth.middleware');
 const { requireAdmin } = require('../middlewares/admin.middleware');
 const { upload, handleMulterError } = require('../middlewares/upload.middleware');
 const documentsService = require('../services/documents.service');
+const { handleValidationErrors } = require('../middlewares/validation.middleware');
+const { timeframeValidation } = require('../utils/validation');
 
 const router = express.Router();
-
-// Helper function to handle validation errors
-const handleValidationErrors = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Validation Error',
-      message: 'Please check your input data',
-      details: errors.array()
-    });
-  }
-  next();
-};
-
-// Validation for timeframe query parameter
-const timeframeValidation = [
-  query('timeframe')
-    .optional()
-    .isIn(['all', 'week', 'month', 'year'])
-    .withMessage('Timeframe must be one of: all, week, month, year')
-];
 
 // @route   POST /api/documents/import
 // @desc    Upload and import document

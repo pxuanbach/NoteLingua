@@ -1,5 +1,12 @@
-import Link from "next/link";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/templates";
+import Link from 'next/link';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/templates';
 
 export default function LandingPage() {
   return (
@@ -11,17 +18,15 @@ export default function LandingPage() {
           <span className="text-primary"> Reading</span>
         </h1>
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Transform your reading experience into a powerful vocabulary learning tool. 
-          Import documents, take notes, and build your personal vocabulary library.
+          Transform your reading experience into a powerful vocabulary learning tool. Import
+          documents, take notes, and build your personal vocabulary library.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/register">
-            <Button size="lg" className="text-lg px-8">
-              Get Started Free
-            </Button>
+            <Button size="lg">Get Started Free</Button>
           </Link>
           <Link href="/login">
-            <Button variant="outline" size="lg" className="text-lg px-8">
+            <Button variant="outline" size="lg">
               Sign In
             </Button>
           </Link>
@@ -36,42 +41,36 @@ export default function LandingPage() {
         <div className="grid md:grid-cols-3 gap-8">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                📚 Document Import
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2">📚 Document Import</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Upload PDFs, text files, and other documents to start learning from 
-                your favorite reading materials.
+                Upload PDFs, text files, and other documents to start learning from your favorite
+                reading materials.
               </CardDescription>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                ✍️ Smart Note-Taking
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2">✍️ Smart Note-Taking</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Take notes while reading and automatically create vocabulary entries 
-                with context and examples.
+                Take notes while reading and automatically create vocabulary entries with context
+                and examples.
               </CardDescription>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                🎯 Vocabulary Management
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2">🎯 Vocabulary Management</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Organize your vocabulary with tags, track learning progress, 
-                and review words with spaced repetition.
+                Organize your vocabulary with tags, track learning progress, and review words with
+                spaced repetition.
               </CardDescription>
             </CardContent>
           </Card>
@@ -80,9 +79,7 @@ export default function LandingPage() {
 
       {/* How it Works Section */}
       <section className="mb-16">
-        <h2 className="text-3xl font-bold text-center mb-12">
-          How NoteLingua Works
-        </h2>
+        <h2 className="text-3xl font-bold text-center mb-12">How NoteLingua Works</h2>
         <div className="grid md:grid-cols-4 gap-8">
           <div className="text-center">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -128,9 +125,7 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="text-center bg-muted rounded-lg p-12">
-        <h2 className="text-3xl font-bold mb-4">
-          Ready to supercharge your vocabulary learning?
-        </h2>
+        <h2 className="text-3xl font-bold mb-4">Ready to supercharge your vocabulary learning?</h2>
         <p className="text-lg text-muted-foreground mb-8">
           Join thousands of learners who are building their vocabulary through reading.
         </p>

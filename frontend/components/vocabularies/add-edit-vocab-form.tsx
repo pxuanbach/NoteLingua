@@ -168,7 +168,7 @@ export function AddEditVocabForm({ edit, vocab, onSuccess, isLoading = false }: 
 
         <div className="flex justify-end">
           {errors.submit && <p className="text-red-500 text-sm mr-4">{errors.submit}</p>}
-          <Button type="submit" disabled={submitLoading || isLoading} className="px-6 py-2">
+          <Button type="submit" disabled={submitLoading || isLoading}>
             {submitLoading
               ? edit
                 ? 'Updating...'

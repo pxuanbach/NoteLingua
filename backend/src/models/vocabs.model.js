@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
 const vocabSchema = new mongoose.Schema({
-  user_id: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'User ID is required'],
+    required: [true, 'User is required'],
     index: true
   },
   word: {
@@ -70,7 +70,7 @@ vocabSchema.methods.addReview = function (correct) {
 // Static method to find by tag
 vocabSchema.statics.findByTag = function (userId, tag) {
   return this.find({
-    user_id: userId,
+    user: userId,
     tags: { $in: [tag] }
   });
 };
@@ -78,15 +78,15 @@ vocabSchema.statics.findByTag = function (userId, tag) {
 // Static method to find by source
 vocabSchema.statics.findBySource = function (userId, source) {
   return this.find({
-    user_id: userId,
+    user: userId,
     source: source
   });
 };
 
 // Compound indexes for performance
-vocabSchema.index({ user_id: 1, word: 1 });
-vocabSchema.index({ user_id: 1, tags: 1 });
-vocabSchema.index({ user_id: 1, created_at: -1 });
+vocabSchema.index({ user: 1, word: 1 });
+vocabSchema.index({ user: 1, tags: 1 });
+vocabSchema.index({ user: 1, created_at: -1 });
 vocabSchema.index({ source: 1 });
 
 module.exports = mongoose.model('Vocabulary', vocabSchema);

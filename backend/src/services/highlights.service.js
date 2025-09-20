@@ -16,7 +16,7 @@ const createHighlight = async (userId, vocabId, documentId, fileHash, highlightD
     // Verify vocab exists and belongs to user
     const vocab = await Vocab.findOne({
       _id: vocabId,
-      user_id: userId
+      user: userId
     });
 
     if (!vocab) {
@@ -26,7 +26,7 @@ const createHighlight = async (userId, vocabId, documentId, fileHash, highlightD
     // Verify document exists and belongs to user
     const document = await Document.findOne({
       _id: documentId,
-      user_id: userId,
+      user: userId,
       file_hash: fileHash
     });
 
@@ -36,29 +36,16 @@ const createHighlight = async (userId, vocabId, documentId, fileHash, highlightD
 
     // Create highlight
     const highlight = new Highlight({
-      user_id: userId,
-      vocab_id: vocabId,
-      document_id: documentId,
+      user: userId,
+      vocab: vocabId,
+      document: documentId,
       file_hash: fileHash,
       ...highlightData
     });
 
     await highlight.save();
 
-    return {
-      id: highlight._id.toString(),
-      user_id: highlight.user_id,
-      vocab_id: highlight.vocab_id,
-      document_id: highlight.document_id,
-      file_hash: highlight.file_hash,
-      content: highlight.content,
-      position: highlight.position,
-      comment: highlight.comment,
-      tags: highlight.tags,
-      source_tag: highlight.source_tag,
-      created_at: highlight.created_at,
-      updated_at: highlight.updated_at
-    };
+    return highlight;
   } catch (error) {
     console.error('Create highlight error:', error);
     throw error;
@@ -78,8 +65,8 @@ const getDocumentHighlights = async (userId, documentId, options = {}) => {
 
     // Build query
     const query = {
-      user_id: userId,
-      document_id: documentId
+      user: userId,
+      document: documentId
     };
 
     // Add search filter
@@ -95,7 +82,7 @@ const getDocumentHighlights = async (userId, documentId, options = {}) => {
     // Get highlights with pagination
     const highlights = await Highlight.find(query)
       .populate({
-        path: 'vocab_id',
+        path: 'vocab',
         select: 'word meaning pronunciation_url tags examples'
       })
       .sort({ created_at: -1 })
@@ -106,7 +93,7 @@ const getDocumentHighlights = async (userId, documentId, options = {}) => {
     const total = await Highlight.countDocuments(query);
 
     return {
-      highlights: highlights,
+      highlights,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -133,7 +120,7 @@ const getFileHighlights = async (userId, fileHash, options = {}) => {
 
     // Build query
     const query = {
-      user_id: userId,
+      user: userId,
       file_hash: fileHash
     };
 
@@ -156,22 +143,8 @@ const getFileHighlights = async (userId, fileHash, options = {}) => {
     // Get total count for pagination
     const total = await Highlight.countDocuments(query);
 
-    const transformedHighlights = highlights.map(highlight => ({
-      id: highlight._id.toString(),
-      user_id: highlight.user_id,
-      document_id: highlight.document_id,
-      file_hash: highlight.file_hash,
-      content: highlight.content,
-      position: highlight.position,
-      comment: highlight.comment,
-      tags: highlight.tags,
-      source_tag: highlight.source_tag,
-      created_at: highlight.created_at,
-      updated_at: highlight.updated_at
-    }));
-
     return {
-      highlights: transformedHighlights,
+      highlights,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -195,26 +168,14 @@ const getHighlightById = async (highlightId, userId) => {
   try {
     const highlight = await Highlight.findOne({
       _id: highlightId,
-      user_id: userId
+      user: userId
     });
 
     if (!highlight) {
       throw new Error('Highlight not found');
     }
 
-    return {
-      id: highlight._id.toString(),
-      user_id: highlight.user_id,
-      document_id: highlight.document_id,
-      file_hash: highlight.file_hash,
-      content: highlight.content,
-      position: highlight.position,
-      comment: highlight.comment,
-      tags: highlight.tags,
-      source_tag: highlight.source_tag,
-      created_at: highlight.created_at,
-      updated_at: highlight.updated_at
-    };
+    return highlight;
   } catch (error) {
     console.error('Get highlight by ID error:', error);
     throw error;
@@ -232,7 +193,7 @@ const updateHighlight = async (highlightId, userId, updateData) => {
   try {
     const highlight = await Highlight.findOne({
       _id: highlightId,
-      user_id: userId
+      user: userId
     });
 
     if (!highlight) {
@@ -244,19 +205,7 @@ const updateHighlight = async (highlightId, userId, updateData) => {
     highlight.updated_at = new Date();
     await highlight.save();
 
-    return {
-      id: highlight._id.toString(),
-      user_id: highlight.user_id,
-      document_id: highlight.document_id,
-      file_hash: highlight.file_hash,
-      content: highlight.content,
-      position: highlight.position,
-      comment: highlight.comment,
-      tags: highlight.tags,
-      source_tag: highlight.source_tag,
-      created_at: highlight.created_at,
-      updated_at: highlight.updated_at
-    };
+    return highlight;
   } catch (error) {
     console.error('Update highlight error:', error);
     throw error;
@@ -273,7 +222,7 @@ const deleteHighlight = async (highlightId, userId) => {
   try {
     const result = await Highlight.deleteOne({
       _id: highlightId,
-      user_id: userId
+      user: userId
     });
 
     if (result.deletedCount === 0) {
@@ -300,7 +249,7 @@ const searchHighlights = async (userId, searchText, options = {}) => {
 
     // Build query
     const query = {
-      user_id: userId,
+      user: userId,
       'content.text': { $regex: searchText, $options: 'i' }
     };
 
@@ -318,22 +267,8 @@ const searchHighlights = async (userId, searchText, options = {}) => {
     // Get total count for pagination
     const total = await Highlight.countDocuments(query);
 
-    const transformedHighlights = highlights.map(highlight => ({
-      id: highlight._id.toString(),
-      user_id: highlight.user_id,
-      document_id: highlight.document_id,
-      file_hash: highlight.file_hash,
-      content: highlight.content,
-      position: highlight.position,
-      comment: highlight.comment,
-      tags: highlight.tags,
-      source_tag: highlight.source_tag,
-      created_at: highlight.created_at,
-      updated_at: highlight.updated_at
-    }));
-
     return {
-      highlights: transformedHighlights,
+      highlights,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

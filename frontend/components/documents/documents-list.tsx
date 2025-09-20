@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, Card, Loading, EmptyState } from '@/components/templates';
 import { PaginationControls } from '@/components/templates/pagination-controls';
 import { useAlert, useConfirmModal } from '@/contexts';
@@ -23,6 +24,7 @@ export function DocumentsList({
   onPageChange,
   isLoading = false,
 }: DocumentsListProps) {
+  const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { showAlert } = useAlert();
   const { showConfirm } = useConfirmModal();
@@ -43,7 +45,7 @@ export function DocumentsList({
           if (response.success) {
             showAlert('success', 'Document deleted successfully');
             // Refresh page to show updated data
-            window.location.reload();
+            router.refresh();
           } else {
             showAlert('error', response.message || 'Delete failed');
           }
@@ -104,7 +106,7 @@ export function DocumentsList({
       <EmptyState
         title="No documents imported"
         description="Start by importing your first PDF or text document."
-        action={<Button onClick={() => window.location.reload()}>Refresh</Button>}
+        action={<Button onClick={() => router.refresh()}>Refresh</Button>}
       />
     );
   }

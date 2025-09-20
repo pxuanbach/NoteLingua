@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Vocab } from '@/types/vocab';
 import { Card } from '@/components/templates/card';
 import { Button } from '@/components/templates/button';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function VocabItem({ vocab, onEdit, onDelete, onReview }: Props) {
+  const router = useRouter();
   const [isReviewExpanded, setIsReviewExpanded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioError, setAudioError] = useState(false);
@@ -109,22 +111,12 @@ export function VocabItem({ vocab, onEdit, onDelete, onReview }: Props) {
 
           <div className="flex gap-2 flex-shrink-0">
             {onEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(vocab)}
-                className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-              >
+              <Button variant="outline" size="sm" onClick={() => onEdit(vocab)}>
                 ✏️
               </Button>
             )}
             {onDelete && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onDelete(vocab._id)}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 dark:border-red-400"
-              >
+              <Button variant="outline" size="sm" onClick={() => onDelete(vocab._id)}>
                 🗑️
               </Button>
             )}
@@ -149,9 +141,9 @@ export function VocabItem({ vocab, onEdit, onDelete, onReview }: Props) {
                     </span>
                     {vocab.document && (
                       <button
-                        onClick={() => window.open(`/imports/${vocab.document?._id}`, '_blank')}
+                        onClick={() => router.push(`/imports/${vocab.document?._id}`)}
                         className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0 cursor-pointer"
-                        title="Open document in new tab"
+                        title="Open document"
                       >
                         <span className="text-xs">🔗</span>
                       </button>

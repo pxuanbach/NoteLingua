@@ -1,7 +1,6 @@
 'use server';
 
-import { cookies } from 'next/headers';
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { serverApi } from '@/lib/server-api';
 import { Document } from '@/types';

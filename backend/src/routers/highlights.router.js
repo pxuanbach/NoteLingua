@@ -1,22 +1,10 @@
 const express = require('express');
-const { body, query, param, validationResult } = require('express-validator');
+const { body, query, param } = require('express-validator');
 const { authenticateToken } = require('../middlewares/auth.middleware');
 const highlightsService = require('../services/highlights.service');
+const { handleValidationErrors } = require('../middlewares/validation.middleware');
 
 const router = express.Router();
-
-// Helper function to handle validation errors
-const handleValidationErrors = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Validation Error',
-      message: 'Please check your input data',
-      details: errors.array()
-    });
-  }
-  next();
-};
 
 // Validation for highlight creation
 const createHighlightValidation = [

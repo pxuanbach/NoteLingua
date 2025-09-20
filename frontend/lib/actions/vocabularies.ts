@@ -1,12 +1,7 @@
 'use server';
 
 import { serverApi } from '../server-api';
-import {
-  CreateVocabRequest,
-  UpdateVocabRequest,
-  VocabQueryParams,
-  VocabReviewRequest,
-} from '@/types';
+import { CreateVocabRequest, VocabQueryParams } from '@/types';
 
 export async function getMyVocabsAction({
   tags,

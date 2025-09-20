@@ -15,21 +15,21 @@ export async function loginAction(formData: FormData) {
 
   if (response.success) {
     const cookieStore = await cookies();
-    
+
     // Set access token (expires in 1 day)
     cookieStore.set('access_token', response.data.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 // 1 day
+      maxAge: 24 * 60 * 60, // 1 day
     });
-    
+
     // Set refresh token (expires in 7 days)
     cookieStore.set('refresh_token', response.data.refresh_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 // 7 days
+      maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
     return { success: true };
@@ -69,4 +69,55 @@ export async function logoutAction() {
   cookieStore.delete('access_token');
   cookieStore.delete('refresh_token');
   redirect('/login');
+}
+
+// For client-side token refresh
+export async function refreshTokenAction() {
+  try {
+    // Use the server API to refresh the token
+    const response = await serverApi.auth.refresh();
+
+    if (response.success) {
+      const cookieStore = await cookies();
+      // Set access token (expires in 1 day)
+      cookieStore.set('access_token', response.data.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60, // 1 day
+      });
+
+      // Set refresh token (expires in 7 days)
+      cookieStore.set('refresh_token', response.data.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+      });
+      return true;
+    } else {
+      const cookieStore = await cookies();
+      // Refresh token failed, clear cookies and redirect to login
+      cookieStore.delete('access_token');
+      cookieStore.delete('refresh_token');
+      redirect('/login');
+    }
+  } catch (error) {
+    // Error during refresh, clear cookies and redirect to login
+    console.error('Token refresh error:', error);
+    return false;
+  }
+}
+
+export async function getNewTokensAction() {
+  const response = await serverApi.auth.refresh();
+
+  if (response.success) {
+    return {
+      access_token: response.data.access_token,
+      refresh_token: response.data.refresh_token,
+    };
+  } else {
+    return { error: response.message || 'Token refresh failed' };
+  }
 }

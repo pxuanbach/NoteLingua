@@ -38,7 +38,7 @@ export function RecentActivity({ recentVocabs = [], recentDocuments = [] }: Rece
                   </div>
                 ))}
                 <Link href="/vocabularies">
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="sm">
                     View All
                   </Button>
                 </Link>
@@ -68,16 +68,13 @@ export function RecentActivity({ recentVocabs = [], recentDocuments = [] }: Rece
                   <div key={doc._id} className="flex justify-between items-center">
                     <div>
                       <p className="font-medium">{doc.file_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {doc.notes?.length || 0} notes
-                      </p>
                     </div>
                     <span className="text-xs text-muted-foreground">
                       {new Date(doc.created_at).toLocaleDateString()}
                     </span>
                   </div>
                 ))}
-                <Button variant="outline" size="sm" className="w-full">
+                <Button variant="outline" size="sm">
                   View All Documents
                 </Button>
               </>

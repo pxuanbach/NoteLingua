@@ -12,3 +12,8 @@ export interface NavItem {
   icon?: React.ComponentType;
   requiresAuth?: boolean;
 }
+
+// Search Params Types
+export interface SearchParams {
+  [key: string]: string | string[] | undefined;
+}
