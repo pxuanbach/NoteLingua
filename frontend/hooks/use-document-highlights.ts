@@ -5,10 +5,17 @@ import {
   getDocumentHighlightsAction,
   deleteHighlightAction,
   updateHighlightAction,
+  createHighlightAction,
 } from '@/lib/actions/highlights';
-import { Highlight, HighlightFilters } from '@/types';
+import {
+  CreateHighlightRequest,
+  Highlight,
+  HighlightFilters,
+  IHighlightWithVocab,
+  UpdateHighlightRequest,
+} from '@/types';
 
-interface UseDocumentHighlightsReturn {
+interface UseDocumentHighlightsProps {
   highlights: Highlight[];
   loading: boolean;
   error: string | null;
@@ -21,7 +28,8 @@ interface UseDocumentHighlightsReturn {
   loadMore: () => void;
   refetch: () => void;
   deleteHighlight: (id: string) => Promise<boolean>;
-  updateHighlight: (id: string, data: any) => Promise<boolean>;
+  updateHighlight: (id: string, data: UpdateHighlightRequest) => Promise<boolean>;
+  createHighlight: (data: CreateHighlightRequest) => Promise<void>;
   hasMore: boolean;
 }
 
@@ -29,7 +37,7 @@ export function useDocumentHighlights(
   documentId: string,
   initialLimit: number = 20,
   filters: HighlightFilters = {}
-): UseDocumentHighlightsReturn {
+): UseDocumentHighlightsProps {
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,24 +49,6 @@ export function useDocumentHighlights(
   });
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // Use refs to store stable references and avoid dependency issues
-  const limitRef = useRef(initialLimit);
-  const filtersRef = useRef(filters);
-  const paginationRef = useRef(pagination);
-
-  // Update refs when values change
-  useEffect(() => {
-    limitRef.current = initialLimit;
-  }, [initialLimit]);
-
-  useEffect(() => {
-    filtersRef.current = filters;
-  }, [filters]);
-
-  useEffect(() => {
-    paginationRef.current = pagination;
-  }, [pagination]);
-
   const fetchHighlights = useCallback(
     async (page: number = 1, append: boolean = false) => {
       try {
@@ -68,9 +58,9 @@ export function useDocumentHighlights(
         setError(null);
 
         const response = await getDocumentHighlightsAction(documentId, {
-          ...filtersRef.current,
+          ...filters,
           page,
-          limit: limitRef.current,
+          limit: initialLimit,
         });
 
         if (append) {
@@ -88,14 +78,12 @@ export function useDocumentHighlights(
         setLoadingMore(false);
       }
     },
-    [documentId] // Only stable documentId dependency
+    [documentId]
   );
 
-  // Direct functions instead of useCallback chains
   const loadMore = () => {
-    const currentPagination = paginationRef.current;
-    if (!loadingMore && currentPagination.page < currentPagination.pages) {
-      fetchHighlights(currentPagination.page + 1, true);
+    if (!loadingMore && pagination.page < pagination.pages) {
+      fetchHighlights(pagination.page + 1, true);
     }
   };
 
@@ -112,13 +100,11 @@ export function useDocumentHighlights(
         const response = await deleteHighlightAction(id);
 
         if (!response.success) {
-          // Revert on failure by calling refetch directly
           fetchHighlights(1, false);
           setError(response.message || 'Failed to delete highlight');
           return false;
         }
 
-        // Update pagination count
         setPagination((prev) => ({
           ...prev,
           total: Math.max(0, prev.total - 1),
@@ -126,7 +112,6 @@ export function useDocumentHighlights(
 
         return true;
       } catch (err) {
-        // Revert on error by calling fetchHighlights directly
         fetchHighlights(1, false);
         setError('Failed to delete highlight');
         return false;
@@ -153,24 +138,25 @@ export function useDocumentHighlights(
     }
   }, []);
 
+  const createHighlight = useCallback(async (data: CreateHighlightRequest) => {
+    try {
+      const response = await createHighlightAction(data);
+
+      if (response.success && response.data) {
+        setHighlights((prev) => [response.data, ...prev]);
+      } else {
+        setError(response.message || 'Failed to create highlight');
+      }
+    } catch (err) {
+      setError('Failed to create highlight');
+    }
+  }, []);
+
   useEffect(() => {
     if (documentId) {
       fetchHighlights(1, false);
     }
   }, [documentId, fetchHighlights]);
-
-  // Reset state when documentId changes
-  useEffect(() => {
-    setHighlights([]);
-    setError(null);
-    setLoading(true);
-    setPagination({
-      page: 1,
-      limit: initialLimit,
-      total: 0,
-      pages: 0,
-    });
-  }, [documentId, initialLimit]);
 
   return {
     highlights,
@@ -181,6 +167,7 @@ export function useDocumentHighlights(
     refetch,
     deleteHighlight,
     updateHighlight,
+    createHighlight,
     hasMore: pagination.page < pagination.pages,
   };
 }

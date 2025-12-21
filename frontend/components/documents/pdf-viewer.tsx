@@ -1,79 +1,219 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Button, Card, Loading, Modal } from '@/components/templates';
-import { useAlert, useAuth } from '@/contexts';
-import { Document } from '@/types';
-import type { Highlight } from '@/types';
-import type { Vocab } from '@/types/vocab';
-import { AddEditVocabForm } from '@/components/vocabularies/add-edit-vocab-form';
-import { SourceType } from '@/types/vocab';
-import { createHighlightAction } from '@/lib/actions/highlights';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Loading, Button } from '@/components/templates';
+import { useDocumentContext } from '@/contexts/document-context';
+import { Document, Highlight, ReactPdfHighlight, HighlightContent } from '@/types';
 import {
   PdfLoader,
   PdfHighlighter,
-  Tip,
   Highlight as PDFHighlight,
   Popup,
   AreaHighlight,
 } from 'react-pdf-highlighter';
 
-import type { IHighlight, NewHighlight } from 'react-pdf-highlighter';
-import type { IHighlightWithVocab } from '@/types';
+import type { Content, IHighlight, NewHighlight, ScaledPosition } from 'react-pdf-highlighter';
 import 'react-pdf-highlighter/dist/style.css';
 
-interface PDFViewerProps {
+interface PdfViewerProps {
   document: Document;
-  initialHighlights?: Highlight[];
-  onClose: () => void;
-  onHighlightEdit: (highlight: Highlight) => void;
-  onHighlightCreate: (highlight: any) => void;
-  onHighlightDelete: (highlightId: string) => void;
+  onHighlightEdit?: (highlight: Highlight) => void;
+  onHighlightDelete?: (highlightId: string) => void;
+  onNewHighlight?: (highlight: ReactPdfHighlight) => void;
 }
 
-// Convert our Highlight type to IHighlight for react-pdf-highlighter
-const convertToIHighlight = (highlight: Highlight): IHighlight => ({
-  id: highlight._id,
-  content: highlight.content,
-  position: highlight.position,
+// SelectionTip component for new translations
+const SelectionTip = ({ onConfirm, content }: { onConfirm: () => void; content: Content }) => (
+  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 max-w-[240px] z-[1001] animate-in fade-in zoom-in duration-200">
+    <div className="text-[10px] font-bold text-primary mb-1 uppercase tracking-wider opacity-70">
+      Selected Text
+    </div>
+    <div className="text-sm font-medium line-clamp-4 mb-3 text-gray-900 dark:text-gray-100 italic leading-relaxed">
+      "{content.text}"
+    </div>
+    <Button size="sm" className="w-full text-xs h-8 cursor-pointer" onClick={onConfirm}>
+      Create Vocabulary
+    </Button>
+  </div>
+);
+
+const mapToIHighlight = (h: Highlight): IHighlight => ({
+  id: h._id,
   comment: {
-    text: highlight.vocab
-      ? `${highlight.vocab.word}: ${highlight.vocab.meaning}`
-      : highlight.comment?.text || '',
-    emoji: highlight.comment?.emoji || '',
+    text: h.vocab?.meaning || '',
+    emoji: '',
   },
+  content: h.content,
+  position: h.position,
 });
 
-const parseIdFromHash = () => document.location.hash.slice('#highlight-'.length);
+export function PdfViewer({
+  document: doc,
+  onHighlightEdit,
+  onHighlightDelete,
+  onNewHighlight,
+}: PdfViewerProps) {
+  const { highlights: contextHighlights, scrollToHighlight } = useDocumentContext();
+  const [highlights, setHighlights] = useState<IHighlight[]>([]);
+  const scrollViewerTo = useRef((highlight: IHighlight) => { });
 
-const resetHash = () => {
-  document.location.hash = '';
-};
+  const getFileUrl = useCallback(() => {
+    return `${process.env.NEXT_PUBLIC_API_URL}/uploads/${doc.file_name}`;
+  }, [doc.file_name]);
 
-const HighlightPopup = ({
-  vocab,
+  useEffect(() => {
+    setHighlights(contextHighlights.map(mapToIHighlight));
+  }, [contextHighlights]);
+
+  const parseIdFromHash = () => window.location.hash.slice('#highlight-'.length);
+
+  const getHighlightById = (id: string) => {
+    return highlights.find((highlight) => highlight.id === id);
+  };
+
+  const scrollToHighlightFromHash = useCallback(() => {
+    const hash = parseIdFromHash();
+    const highlight = getHighlightById(hash);
+    console.log('🚀 ~ PdfViewer ~ highlight:', highlight);
+    if (highlight) {
+      scrollViewerTo.current(highlight);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('hashchange', scrollToHighlightFromHash, false);
+
+    return () => {
+      window.removeEventListener('hashchange', scrollToHighlightFromHash, false);
+    };
+  }, [scrollToHighlightFromHash]);
+
+  const resetHash = () => {
+    window.location.hash = '';
+  };
+
+  return (
+    <div className="h-full w-full bg-gray-100 dark:bg-gray-950 overflow-hidden relative">
+      <PdfLoader url={getFileUrl()} beforeLoad={<Loading />}>
+        {(pdfDocument) => (
+          <PdfHighlighter
+            pdfDocument={pdfDocument}
+            enableAreaSelection={(event) => event.altKey}
+            onScrollChange={resetHash}
+            scrollRef={(scrollTo) => {
+              scrollViewerTo.current = scrollTo;
+              scrollToHighlightFromHash();
+            }}
+            onSelectionFinished={(position, content, hideTipAndSelection, transformSelection) => {
+              transformSelection();
+
+              return (
+                <SelectionTip
+                  content={content}
+                  onConfirm={() => {
+                    if (content.text) {
+                      onNewHighlight?.({ content: content as HighlightContent, position });
+                      hideTipAndSelection();
+                    }
+                  }}
+                />
+              );
+            }}
+            highlightTransform={(
+              highlight,
+              index,
+              setTip,
+              hideTip,
+              viewportToScaled,
+              screenshot,
+              isScrolledTo,
+            ) => {
+              console.log("🚀 ~ PdfViewer ~ isScrolledTo:", isScrolledTo)
+              const isTextHighlight = !highlight.content?.image;
+
+              const component = isTextHighlight ? (
+                <PDFHighlight
+                  isScrolledTo={isScrolledTo}
+                  position={highlight.position}
+                  comment={highlight.comment}
+                />
+              ) : (
+                <AreaHighlight
+                  isScrolledTo={isScrolledTo}
+                  highlight={highlight}
+                  onChange={(boundingRect) => { }}
+                />
+              );
+
+              return (
+                <Popup
+                  popupContent={
+                    <HighlightPopup
+                      highlightId={highlight.id as string}
+                      onEdit={onHighlightEdit}
+                      onDelete={onHighlightDelete}
+                    />
+                  }
+                  onMouseOver={(popupContent) => setTip(highlight, (highlight) => popupContent)}
+                  onMouseOut={hideTip}
+                  key={index}
+                >
+                  {component}
+                </Popup>
+              );
+            }}
+            highlights={highlights}
+          />
+        )}
+      </PdfLoader>
+    </div>
+  );
+}
+
+function HighlightPopup({
+  highlightId,
   onEdit,
   onDelete,
 }: {
-  vocab?: {
-    word: string;
-    meaning: string;
-    tags?: string[];
-  };
-  onEdit: () => void;
-  onDelete: () => void;
-}) => (
-  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[250px]">
-    {vocab && (
-      <div className="mb-3 pb-2 border-b border-gray-200 dark:border-gray-600">
-        <div className="font-semibold text-gray-900 dark:text-gray-100">{vocab.word}</div>
-        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{vocab.meaning}</div>
-        {vocab.tags && vocab.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {vocab.tags.slice(0, 3).map((tag, index) => (
+  highlightId: string;
+  onEdit?: (h: Highlight) => void;
+  onDelete?: (id: string) => void;
+}) {
+  const { highlights } = useDocumentContext();
+  const highlight = highlights.find((h) => h._id === highlightId);
+
+  if (!highlight) return null;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl p-4 min-w-[300px] z-[1000] animate-in fade-in slide-in-from-bottom-2 duration-200">
+      <div className="mb-4">
+        <div className="flex justify-between items-start">
+          <h3 className="font-bold text-xl text-primary">
+            {highlight.vocab?.word || highlight.content?.text}
+          </h3>
+        </div>
+
+        {highlight.vocab?.meaning && (
+          <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 leading-relaxed border-l-2 border-primary/20 pl-3">
+            {highlight.vocab.meaning}
+          </div>
+        )}
+
+        {highlight.vocab?.examples && highlight.vocab.examples.length > 0 && (
+          <div className="mt-3">
+            <div className="text-[10px] font-bold text-gray-400 uppercase mb-1">Example</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+              "{highlight.vocab.examples[0]}"
+            </p>
+          </div>
+        )}
+
+        {highlight.vocab?.tags && highlight.vocab.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {highlight.vocab.tags.map((tag) => (
               <span
-                key={index}
-                className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded"
+                key={tag}
+                className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium"
               >
                 {tag}
               </span>
@@ -81,363 +221,41 @@ const HighlightPopup = ({
           </div>
         )}
       </div>
-    )}
-    <div className="flex gap-2">
-      <Button size="sm" variant="outline" onClick={onEdit}>
-        Edit
-      </Button>
-      <Button size="sm" variant="outline" onClick={onDelete}>
-        Delete
-      </Button>
-    </div>
-  </div>
-);
 
-const CustomTip = ({ onOpen, onConfirm }: { onOpen: () => void; onConfirm: () => void }) => (
-  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[120px]">
-    <div className="flex gap-2">
-      <Button
-        size="sm"
-        onClick={() => {
-          onOpen();
-          onConfirm();
-        }}
-      >
-        Add Vocabulary
-      </Button>
-    </div>
-  </div>
-);
-
-export function PDFViewer({
-  document,
-  initialHighlights = [],
-  onClose,
-  onHighlightEdit,
-  onHighlightCreate,
-  onHighlightDelete,
-}: PDFViewerProps) {
-  const [pdfUrl, setPdfUrl] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [pdfHighlights, setPdfHighlights] = useState<IHighlight[]>([]);
-  const [vocabMap, setVocabMap] = useState<Map<string, any>>(new Map());
-  const [highlights, setHighlights] = useState<Highlight[]>([]);
-
-  // Create vocab map from original highlights data
-  useEffect(() => {
-    const newVocabMap = new Map();
-    highlights.forEach((highlight) => {
-      if (highlight.vocab_id || highlight.vocab) {
-        newVocabMap.set(highlight._id, highlight.vocab || highlight.vocab_id);
-      }
-    });
-    setVocabMap(newVocabMap);
-  }, [highlights]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedHighlight, setSelectedHighlight] = useState<IHighlight | null>(null);
-  const [highlightToEdit, setHighlightToEdit] = useState<string | null>(null);
-  const scrollViewerTo = useRef((highlight: IHighlight) => {});
-  const { showAlert } = useAlert();
-  const { user } = useAuth();
-
-  // Initialize highlights from server data
-  useEffect(() => {
-    const convertedHighlights = initialHighlights.map(convertToIHighlight);
-    setPdfHighlights(convertedHighlights);
-    setHighlights(initialHighlights);
-  }, [initialHighlights]);
-
-  useEffect(() => {
-    // Check if it's a PDF file
-    if (!document.file_name.toLowerCase().endsWith('.pdf')) {
-      setError('Only PDF files are supported for viewing');
-      setLoading(false);
-      return;
-    }
-
-    // Construct PDF URL from backend
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    const pdfPath = `${baseUrl}/uploads/${document.file_name}`;
-
-    setPdfUrl(pdfPath);
-    setLoading(false);
-  }, [document]);
-
-  const addHighlight = (highlight: NewHighlight) => {
-    console.log('Saving highlight', highlight);
-
-    // Set the selected highlight for the modal
-    setSelectedHighlight({
-      ...highlight,
-      id: String(Date.now()),
-    });
-    setIsModalOpen(true);
-  };
-
-  const editHighlight = (highlightId: string) => {
-    console.log('Editing highlight', highlightId);
-
-    const originalHighlight = highlights.find((h) => h._id === highlightId);
-    if (originalHighlight) {
-      onHighlightEdit(originalHighlight);
-    }
-  };
-
-  const deleteHighlight = (highlightId: string) => {
-    onHighlightDelete(highlightId);
-    // Remove from local state immediately for UI responsiveness
-    setPdfHighlights((prev) => prev.filter((h) => h.id !== highlightId));
-    showAlert('success', 'Highlight deleted successfully');
-  };
-
-  const handleVocabSuccess = async (vocab?: Vocab) => {
-    setIsModalOpen(false);
-    setSelectedHighlight(null);
-    setHighlightToEdit(null);
-
-    if (selectedHighlight && vocab) {
-      try {
-        // Create highlight with vocab_id after vocabulary is saved
-        const highlightData = {
-          vocab_id: vocab._id,
-          document_id: document._id,
-          file_hash: document.file_hash,
-          content: {
-            text: selectedHighlight.content?.text || '',
-          },
-          position: selectedHighlight.position,
-          comment: selectedHighlight.comment,
-        };
-
-        const result = await createHighlightAction(highlightData);
-
-        if (result.success && result.data) {
-          const newHighlightId = result.data._id;
-
-          // Add to local highlights state
-          setPdfHighlights((prev) => [
-            ...prev,
-            {
-              ...selectedHighlight,
-              id: newHighlightId,
-            },
-          ]);
-
-          // Update vocab map with the new vocab data
-          setVocabMap((prev) => {
-            const newMap = new Map(prev);
-            newMap.set(newHighlightId, {
-              _id: vocab._id,
-              word: vocab.word,
-              meaning: vocab.meaning,
-              tags: vocab.tags,
-            });
-            return newMap;
-          });
-
-          onHighlightCreate(result.data);
-
-          showAlert('success', 'Highlight and vocabulary saved successfully');
-        } else {
-          showAlert('error', result.message || 'Failed to save highlight');
-        }
-      } catch (error) {
-        console.error('Failed to create highlight:', error);
-        showAlert('error', 'Failed to create highlight');
-      }
-    }
-  };
-
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedHighlight(null);
-    setHighlightToEdit(null);
-  };
-
-  const handleExportHighlights = () => {
-    // TODO: Implement export functionality for highlights
-    showAlert('default', 'Export highlights feature coming soon');
-  };
-
-  const getHighlightById = (id: string) => {
-    return pdfHighlights.find((highlight) => highlight.id === id);
-  };
-
-  const scrollToHighlightFromHash = () => {
-    const highlight = getHighlightById(parseIdFromHash());
-    if (highlight) {
-      scrollViewerTo.current(highlight);
-    }
-  };
-
-  if (error) {
-    return (
-      <Card className="p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">PDF Viewer</h2>
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        </div>
-        <div className="text-center">
-          <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
-          <Button onClick={onClose}>Go Back</Button>
-        </div>
-      </Card>
-    );
-  }
-
-  if (loading) {
-    return <Loading />;
-  }
-
-  return (
-    <div className="bg-white dark:bg-gray-900 h-screen flex flex-col">
-      {/* PDF Viewer with Highlighter */}
-      <div className="flex-1 relative">
-        <div className="absolute inset-0">
-          <PdfLoader url={pdfUrl} beforeLoad={<Loading />}>
-            {(pdfDocument) => (
-              <PdfHighlighter
-                pdfDocument={pdfDocument}
-                enableAreaSelection={(event) => event.altKey}
-                onScrollChange={resetHash}
-                scrollRef={(scrollTo) => {
-                  scrollViewerTo.current = scrollTo;
-                  scrollToHighlightFromHash();
-                }}
-                onSelectionFinished={(
-                  position,
-                  content,
-                  hideTipAndSelection,
-                  transformSelection
-                ) => {
-                  return (
-                    <CustomTip
-                      onOpen={transformSelection}
-                      onConfirm={() => {
-                        addHighlight({ content, position, comment: { text: '', emoji: '' } });
-                        hideTipAndSelection();
-                      }}
-                    />
-                  );
-                }}
-                highlightTransform={(
-                  highlight,
-                  index,
-                  setTip,
-                  hideTip,
-                  viewportToScaled,
-                  screenshot,
-                  isScrolledTo
-                ) => {
-                  const isTextHighlight = !highlight.content?.image;
-
-                  const component = isTextHighlight ? (
-                    <PDFHighlight
-                      isScrolledTo={isScrolledTo}
-                      position={highlight.position}
-                      comment={highlight.comment}
-                    />
-                  ) : (
-                    <AreaHighlight
-                      isScrolledTo={isScrolledTo}
-                      highlight={highlight}
-                      onChange={(boundingRect) => {
-                        // Handle area highlight changes
-                        setPdfHighlights((prev) =>
-                          prev.map((h) =>
-                            h.id === highlight.id
-                              ? {
-                                  ...h,
-                                  position: {
-                                    ...h.position,
-                                    boundingRect: viewportToScaled(boundingRect),
-                                  },
-                                  content: {
-                                    ...h.content,
-                                    image: screenshot(boundingRect),
-                                  },
-                                }
-                              : h
-                          )
-                        );
-                      }}
-                    />
-                  );
-
-                  return (
-                    <Popup
-                      popupContent={
-                        <HighlightPopup
-                          vocab={
-                            vocabMap.get(highlight.id)
-                              ? {
-                                  word: vocabMap.get(highlight.id).word,
-                                  meaning: vocabMap.get(highlight.id).meaning,
-                                  tags: vocabMap.get(highlight.id).tags,
-                                }
-                              : undefined
-                          }
-                          onEdit={() => editHighlight(highlight.id)}
-                          onDelete={() => deleteHighlight(highlight.id)}
-                        />
-                      }
-                      onMouseOver={(popupContent) => setTip(highlight, (highlight) => popupContent)}
-                      onMouseOut={hideTip}
-                      key={index}
-                    >
-                      {component}
-                    </Popup>
-                  );
-                }}
-                highlights={pdfHighlights}
-              />
-            )}
-          </PdfLoader>
-        </div>
+      <div className="flex gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+        <Button
+          size="sm"
+          variant="outline"
+          className="flex-1 text-xs h-8"
+          onClick={() => onEdit?.(highlight)}
+        >
+          <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+          Edit
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="flex-1 text-xs h-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+          onClick={() => onDelete?.(highlight._id)}
+        >
+          <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            />
+          </svg>
+          Delete
+        </Button>
       </div>
-
-      {/* Modal for adding/editing vocabulary */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        title={highlightToEdit ? 'Edit Vocabulary' : 'Add New Vocabulary'}
-        size="lg"
-      >
-        {selectedHighlight && (
-          <AddEditVocabForm
-            edit={!!highlightToEdit}
-            vocab={
-              highlightToEdit
-                ? {
-                    _id: highlightToEdit,
-                    user_id: user?.id || '',
-                    word: selectedHighlight.content?.text || '',
-                    meaning: '',
-                    tags: [],
-                    source: document._id,
-                    source_type: SourceType.Document,
-                    examples: [],
-                    created_at: new Date(),
-                  }
-                : {
-                    _id: '',
-                    user_id: user?.id || '',
-                    word: selectedHighlight.content?.text || '',
-                    meaning: '',
-                    tags: [],
-                    source: document._id,
-                    source_type: SourceType.Document,
-                    examples: [],
-                    created_at: new Date(),
-                  }
-            }
-            onSuccess={handleVocabSuccess}
-          />
-        )}
-      </Modal>
     </div>
   );
 }

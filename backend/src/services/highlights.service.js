@@ -16,7 +16,7 @@ const createHighlight = async (userId, vocabId, documentId, fileHash, highlightD
     // Verify vocab exists and belongs to user
     const vocab = await Vocab.findOne({
       _id: vocabId,
-      user: userId
+      user: userId,
     });
 
     if (!vocab) {
@@ -27,7 +27,7 @@ const createHighlight = async (userId, vocabId, documentId, fileHash, highlightD
     const document = await Document.findOne({
       _id: documentId,
       user: userId,
-      file_hash: fileHash
+      file_hash: fileHash,
     });
 
     if (!document) {
@@ -40,12 +40,15 @@ const createHighlight = async (userId, vocabId, documentId, fileHash, highlightD
       vocab: vocabId,
       document: documentId,
       file_hash: fileHash,
-      ...highlightData
+      ...highlightData,
     });
 
     await highlight.save();
 
-    return highlight;
+    return {
+      ...highlight,
+      vocab,
+    };
   } catch (error) {
     console.error('Create highlight error:', error);
     throw error;
@@ -66,7 +69,7 @@ const getDocumentHighlights = async (userId, documentId, options = {}) => {
     // Build query
     const query = {
       user: userId,
-      document: documentId
+      document: documentId,
     };
 
     // Add search filter
@@ -83,7 +86,7 @@ const getDocumentHighlights = async (userId, documentId, options = {}) => {
     const highlights = await Highlight.find(query)
       .populate({
         path: 'vocab',
-        select: 'word meaning pronunciation_url tags examples'
+        select: 'word meaning pronunciation_url tags examples',
       })
       .sort({ created_at: -1 })
       .limit(limit * 1)
@@ -98,8 +101,8 @@ const getDocumentHighlights = async (userId, documentId, options = {}) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     };
   } catch (error) {
     console.error('Get document highlights error:', error);
@@ -121,7 +124,7 @@ const getFileHighlights = async (userId, fileHash, options = {}) => {
     // Build query
     const query = {
       user: userId,
-      file_hash: fileHash
+      file_hash: fileHash,
     };
 
     // Add search filter
@@ -149,8 +152,8 @@ const getFileHighlights = async (userId, fileHash, options = {}) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     };
   } catch (error) {
     console.error('Get file highlights error:', error);
@@ -168,7 +171,7 @@ const getHighlightById = async (highlightId, userId) => {
   try {
     const highlight = await Highlight.findOne({
       _id: highlightId,
-      user: userId
+      user: userId,
     });
 
     if (!highlight) {
@@ -193,7 +196,7 @@ const updateHighlight = async (highlightId, userId, updateData) => {
   try {
     const highlight = await Highlight.findOne({
       _id: highlightId,
-      user: userId
+      user: userId,
     });
 
     if (!highlight) {
@@ -222,7 +225,7 @@ const deleteHighlight = async (highlightId, userId) => {
   try {
     const result = await Highlight.deleteOne({
       _id: highlightId,
-      user: userId
+      user: userId,
     });
 
     if (result.deletedCount === 0) {
@@ -250,7 +253,7 @@ const searchHighlights = async (userId, searchText, options = {}) => {
     // Build query
     const query = {
       user: userId,
-      'content.text': { $regex: searchText, $options: 'i' }
+      'content.text': { $regex: searchText, $options: 'i' },
     };
 
     // Add tags filter
@@ -273,8 +276,8 @@ const searchHighlights = async (userId, searchText, options = {}) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     };
   } catch (error) {
     console.error('Search highlights error:', error);
@@ -289,5 +292,5 @@ module.exports = {
   getHighlightById,
   updateHighlight,
   deleteHighlight,
-  searchHighlights
+  searchHighlights,
 };

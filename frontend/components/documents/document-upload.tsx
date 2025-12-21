@@ -93,10 +93,9 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
     <div>
       <div
         className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors
-          ${
-            dragActive
-              ? 'border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-900/20'
-              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+          ${dragActive
+            ? 'border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-900/20'
+            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
           }
           ${isUploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
         `}
@@ -117,7 +116,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
 
         {isUploading ? (
           <div className="flex flex-col items-center">
-            <Loading className="mb-4" />
+            <Loading />
             <p className="text-gray-600 dark:text-gray-400">Uploading document...</p>
           </div>
         ) : (

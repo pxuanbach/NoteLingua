@@ -1,4 +1,3 @@
-// Highlight Types - Compatible with react-pdf-highlighter
 export interface Highlight {
   _id: string;
   user_id: string;
@@ -90,11 +89,8 @@ export interface HighlightComment {
 export interface ReactPdfHighlight {
   content: HighlightContent;
   position: HighlightPosition;
-  comment?: HighlightComment;
-  id: string; // Required for react-pdf-highlighter
 }
 
-// Extended IHighlight with vocab data
 export interface IHighlightWithVocab extends ReactPdfHighlight {
   vocab?: {
     _id: string;

@@ -1,22 +1,25 @@
 'use client';
 
-import { Card, CardContent } from '@/components/templates';
-import { HighlightActions } from './highlight-actions';
+import { Button, Card, CardContent } from '@/components/templates';
 import { Highlight } from '@/types';
 
 interface HighlightItemProps {
   highlight: Highlight;
   onEdit: (highlight: Highlight) => void;
-  onDelete: (id: string) => Promise<boolean>;
+  onDelete: (id: string) => void;
+  onClick: () => void;
 }
 
-export function HighlightItem({ highlight, onEdit, onDelete }: HighlightItemProps) {
+export function HighlightItem({ highlight, onEdit, onDelete, onClick }: HighlightItemProps) {
   const vocab = highlight.vocab;
 
   if (!vocab) return <></>;
 
   return (
-    <Card className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+    <Card
+      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      onClick={onClick}
+    >
       <CardContent className="p-1">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 px-2">
@@ -49,8 +52,29 @@ export function HighlightItem({ highlight, onEdit, onDelete }: HighlightItemProp
               </div>
             )}
           </div>
-          <div onClick={(e) => e.stopPropagation()}>
-            <HighlightActions highlight={highlight} onEdit={onEdit} onDelete={onDelete} />
+          <div>
+            <div className={`flex flex-col items-center gap-1`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(highlight);
+                }}
+              >
+                <div title="Edit">✏️</div>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(highlight._id);
+                }}
+              >
+                <div title="Delete">🗑️</div>
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>
