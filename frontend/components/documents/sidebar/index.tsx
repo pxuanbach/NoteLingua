@@ -12,7 +12,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onHighlightEdit, onHighlightDelete }: SidebarProps) {
-  const { highlights, loading, loadMore, hasMore, scrollToHighlight } = useDocumentContext();
+  const { highlights, loading, loadMore, hasMore, updateHash
+  } = useDocumentContext();
 
   useEffect(() => {
     console.log('🚀 ~ Sidebar ~ highlights:', highlights);
@@ -41,7 +42,7 @@ export function Sidebar({ onHighlightEdit, onHighlightDelete }: SidebarProps) {
                 highlight={highlight}
                 onEdit={() => onHighlightEdit?.(highlight)}
                 onDelete={(id) => onHighlightDelete?.(id)}
-                onClick={() => scrollToHighlight(highlight._id)}
+                onClick={() => updateHash(highlight._id)}
               />
             ))}
 

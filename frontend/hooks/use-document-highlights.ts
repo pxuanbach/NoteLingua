@@ -142,7 +142,7 @@ export function useDocumentHighlights(
     try {
       const response = await createHighlightAction(data);
 
-      if (response.success && response.data) {
+      if (response.success) {
         setHighlights((prev) => [response.data, ...prev]);
       } else {
         setError(response.message || 'Failed to create highlight');

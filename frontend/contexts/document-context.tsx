@@ -1,8 +1,10 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useState, useCallback } from 'react';
+import { createContext, useContext, ReactNode, useState, useCallback, useRef, useEffect } from 'react';
 import { useDocumentHighlights } from '@/hooks/use-document-highlights';
 import { CreateHighlightRequest, Highlight, UpdateHighlightRequest } from '@/types';
+import { IHighlight } from 'react-pdf-highlighter-extended';
+import { mapHighlightToIHighlight } from '@/utils/mapDataTo';
 
 interface DocumentContextType {
   highlights: Highlight[];
@@ -14,7 +16,10 @@ interface DocumentContextType {
   createHighlight: (data: CreateHighlightRequest) => Promise<void>;
   updateHighlight: (id: string, data: UpdateHighlightRequest) => Promise<boolean>;
   deleteHighlight: (id: string) => Promise<boolean>;
-  scrollToHighlight: (id: string) => void;
+  scrollToHighlight: () => void;
+  scrollViewerTo: React.RefObject<(highlight: IHighlight) => void>;
+  iHighlights: IHighlight[];
+  updateHash: (id: string) => void;
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
@@ -37,10 +42,29 @@ export function DocumentProvider({
     updateHighlight,
     deleteHighlight
   } = useDocumentHighlights(documentId);
+  const scrollViewerTo = useRef((highlight: IHighlight) => { });
+  const [iHighlights, setIHighlights] = useState<IHighlight[]>([]);
 
-  const scrollToHighlight = useCallback((id: string) => {
-    window.location.hash = `highlight-${id}`;
+  const parseIdFromHash = () => window.location.hash.slice('#highlight-'.length);
+
+  const updateHash = (id: string) => {
+    document.location.hash = `highlight-${id}`;
+  };
+
+  const getHighlightById = (id: string) => {
+    return iHighlights.find((highlight) => highlight.id === id);
+  };
+
+  const scrollToHighlight = useCallback(() => {
+    const highlight = getHighlightById(parseIdFromHash());
+    if (highlight) {
+      scrollViewerTo.current(highlight);
+    }
   }, []);
+
+  useEffect(() => {
+    setIHighlights(highlights.map(mapHighlightToIHighlight));
+  }, [highlights]);
 
   return (
     <DocumentContext.Provider
@@ -55,6 +79,9 @@ export function DocumentProvider({
         updateHighlight,
         deleteHighlight,
         scrollToHighlight,
+        scrollViewerTo: scrollViewerTo,
+        iHighlights,
+        updateHash, // update hash to scroll to specific highlight
       }}
     >
       {children}

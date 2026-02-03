@@ -43,10 +43,10 @@ const createHighlight = async (userId, vocabId, documentId, fileHash, highlightD
       ...highlightData,
     });
 
-    await highlight.save();
+    const savedHighlight = await highlight.save();
 
     return {
-      ...highlight,
+      ...savedHighlight.toJSON(),
       vocab,
     };
   } catch (error) {

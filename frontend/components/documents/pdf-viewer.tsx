@@ -10,10 +10,11 @@ import {
   Highlight as PDFHighlight,
   Popup,
   AreaHighlight,
-} from 'react-pdf-highlighter';
+} from 'react-pdf-highlighter-extended';
 
-import type { Content, IHighlight, NewHighlight, ScaledPosition } from 'react-pdf-highlighter';
-import 'react-pdf-highlighter/dist/style.css';
+import type { Content, IHighlight, NewHighlight, ScaledPosition } from 'react-pdf-highlighter-extended';
+import 'react-pdf-highlighter-extended/dist/style.css';
+import { mapHighlightToIHighlight } from '@/utils/mapDataTo';
 
 interface PdfViewerProps {
   document: Document;
@@ -37,56 +38,25 @@ const SelectionTip = ({ onConfirm, content }: { onConfirm: () => void; content: 
   </div>
 );
 
-const mapToIHighlight = (h: Highlight): IHighlight => ({
-  id: h._id,
-  comment: {
-    text: h.vocab?.meaning || '',
-    emoji: '',
-  },
-  content: h.content,
-  position: h.position,
-});
-
 export function PdfViewer({
   document: doc,
   onHighlightEdit,
   onHighlightDelete,
   onNewHighlight,
 }: PdfViewerProps) {
-  const { highlights: contextHighlights, scrollToHighlight } = useDocumentContext();
-  const [highlights, setHighlights] = useState<IHighlight[]>([]);
-  const scrollViewerTo = useRef((highlight: IHighlight) => { });
+  const { iHighlights, scrollToHighlight, scrollViewerTo } = useDocumentContext();
 
   const getFileUrl = useCallback(() => {
     return `${process.env.NEXT_PUBLIC_API_URL}/uploads/${doc.file_name}`;
   }, [doc.file_name]);
 
   useEffect(() => {
-    setHighlights(contextHighlights.map(mapToIHighlight));
-  }, [contextHighlights]);
-
-  const parseIdFromHash = () => window.location.hash.slice('#highlight-'.length);
-
-  const getHighlightById = (id: string) => {
-    return highlights.find((highlight) => highlight.id === id);
-  };
-
-  const scrollToHighlightFromHash = useCallback(() => {
-    const hash = parseIdFromHash();
-    const highlight = getHighlightById(hash);
-    console.log('🚀 ~ PdfViewer ~ highlight:', highlight);
-    if (highlight) {
-      scrollViewerTo.current(highlight);
-    }
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('hashchange', scrollToHighlightFromHash, false);
+    window.addEventListener('hashchange', scrollToHighlight, false);
 
     return () => {
-      window.removeEventListener('hashchange', scrollToHighlightFromHash, false);
+      window.removeEventListener('hashchange', scrollToHighlight, false);
     };
-  }, [scrollToHighlightFromHash]);
+  }, [scrollToHighlight]);
 
   const resetHash = () => {
     window.location.hash = '';
@@ -102,7 +72,7 @@ export function PdfViewer({
             onScrollChange={resetHash}
             scrollRef={(scrollTo) => {
               scrollViewerTo.current = scrollTo;
-              scrollToHighlightFromHash();
+              scrollToHighlight();
             }}
             onSelectionFinished={(position, content, hideTipAndSelection, transformSelection) => {
               transformSelection();
@@ -128,7 +98,6 @@ export function PdfViewer({
               screenshot,
               isScrolledTo,
             ) => {
-              console.log("🚀 ~ PdfViewer ~ isScrolledTo:", isScrolledTo)
               const isTextHighlight = !highlight.content?.image;
 
               const component = isTextHighlight ? (
@@ -162,7 +131,7 @@ export function PdfViewer({
                 </Popup>
               );
             }}
-            highlights={highlights}
+            highlights={iHighlights}
           />
         )}
       </PdfLoader>
