@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   getDocumentHighlightsAction,
   deleteHighlightAction,
@@ -11,7 +11,6 @@ import {
   CreateHighlightRequest,
   Highlight,
   HighlightFilters,
-  IHighlightWithVocab,
   UpdateHighlightRequest,
 } from '@/types';
 
@@ -120,7 +119,7 @@ export function useDocumentHighlights(
     [fetchHighlights] // Only depend on fetchHighlights, not refetch
   );
 
-  const updateHighlight = useCallback(async (id: string, data: any): Promise<boolean> => {
+  const updateHighlight = useCallback(async (id: string, data: UpdateHighlightRequest): Promise<boolean> => {
     try {
       const response = await updateHighlightAction(id, data);
 

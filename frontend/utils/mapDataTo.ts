@@ -3,7 +3,7 @@ import { Highlight } from '@/types';
 
 export const mapHighlightToIHighlight = (h: Highlight): IHighlight => ({
   id: h._id,
-  type: 'text',
+  type: h.content?.text ? 'text' : 'area',
   content: h.content,
   position: h.position,
 });

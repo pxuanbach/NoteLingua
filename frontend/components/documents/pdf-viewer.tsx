@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, Component } from 'react';
 import { Loading, Button } from '@/components/templates';
 import { useDocumentContext } from '@/contexts/document-context';
 import { Document, Highlight, ReactPdfHighlight, HighlightContent } from '@/types';
@@ -142,12 +142,30 @@ function HighlightContainer({
   onHighlightDelete?: (highlightId: string) => void;
 }) {
   return (
-    <HighlightCellRenderer
-      highlights={highlights}
-      onHighlightEdit={onHighlightEdit}
-      onHighlightDelete={onHighlightDelete}
-    />
+    <HighlightErrorBoundary>
+      <HighlightCellRenderer
+        highlights={highlights}
+        onHighlightEdit={onHighlightEdit}
+        onHighlightDelete={onHighlightDelete}
+      />
+    </HighlightErrorBoundary>
   );
+}
+
+class HighlightErrorBoundary extends Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
 }
 
 function HighlightCellRenderer({
@@ -159,60 +177,55 @@ function HighlightCellRenderer({
   onHighlightEdit?: (highlight: Highlight) => void;
   onHighlightDelete?: (highlightId: string) => void;
 }) {
-  try {
-    const containerContext = useHighlightContainerContext();
-    const { highlight: viewportHighlight, isScrolledTo } = containerContext;
+  const containerContext = useHighlightContainerContext();
+  const { highlight: viewportHighlight, isScrolledTo } = containerContext;
 
-    // Find matching database highlight
-    const dbHighlight = highlights.find((h) => h._id === viewportHighlight.id);
-    const [showPopup, setShowPopup] = useState(false);
+  // Find matching database highlight
+  const dbHighlight = highlights.find((h) => h._id === viewportHighlight.id);
+  const [showPopup, setShowPopup] = useState(false);
 
-    const isTextHighlight = !viewportHighlight.content?.image;
+  const isTextHighlight = !viewportHighlight.content?.image;
 
-    return (
-      <MonitoredHighlightContainer
-        onMouseEnter={() => setShowPopup(true)}
-        onMouseLeave={() => setShowPopup(false)}
-        highlightTip={
-          showPopup && dbHighlight
-            ? {
-              position: viewportHighlight.position,
-              content: (
-                <HighlightPopup
-                  highlight={dbHighlight}
-                  onEdit={onHighlightEdit}
-                  onDelete={onHighlightDelete}
-                />
-              ),
+  return (
+    <MonitoredHighlightContainer
+      onMouseEnter={() => setShowPopup(true)}
+      onMouseLeave={() => setShowPopup(false)}
+      highlightTip={
+        showPopup && dbHighlight
+          ? {
+            position: viewportHighlight.position,
+            content: (
+              <HighlightPopup
+                highlight={dbHighlight}
+                onEdit={onHighlightEdit}
+                onDelete={onHighlightDelete}
+              />
+            ),
+          }
+          : undefined
+      }
+    >
+      {isTextHighlight ? (
+        <TextHighlight
+          highlight={viewportHighlight as ViewportHighlight}
+          isScrolledTo={isScrolledTo}
+          onClick={() => {
+            if (dbHighlight) {
+              onHighlightEdit?.(dbHighlight);
             }
-            : undefined
-        }
-      >
-        {isTextHighlight ? (
-          <TextHighlight
-            highlight={viewportHighlight as ViewportHighlight}
-            isScrolledTo={isScrolledTo}
-            onClick={() => {
-              if (dbHighlight) {
-                onHighlightEdit?.(dbHighlight);
-              }
-            }}
-          />
-        ) : (
-          <AreaHighlight
-            highlight={viewportHighlight as ViewportHighlight}
-            onChange={() => {
-              // Handle area highlight change
-            }}
-            isScrolledTo={isScrolledTo}
-          />
-        )}
-      </MonitoredHighlightContainer>
-    );
-  } catch (e) {
-    // Not in highlight context, return null
-    return null;
-  }
+          }}
+        />
+      ) : (
+        <AreaHighlight
+          highlight={viewportHighlight as ViewportHighlight}
+          onChange={() => {
+            // Handle area highlight change
+          }}
+          isScrolledTo={isScrolledTo}
+        />
+      )}
+    </MonitoredHighlightContainer>
+  );
 }
 
 function HighlightPopup({

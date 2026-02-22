@@ -76,6 +76,7 @@ export interface HighlightPosition {
     height: number;
     pageNumber: number;
   }>;
+  pageNumber?: number;
 }
 
 export interface HighlightContent {
