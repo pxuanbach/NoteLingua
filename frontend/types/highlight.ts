@@ -65,6 +65,7 @@ export interface HighlightPosition {
     y2: number;
     width: number;
     height: number;
+    pageNumber: number;
   };
   rects: Array<{
     x1: number;
@@ -73,8 +74,8 @@ export interface HighlightPosition {
     y2: number;
     width: number;
     height: number;
+    pageNumber: number;
   }>;
-  pageNumber: number; // Required for react-pdf-highlighter
 }
 
 export interface HighlightContent {

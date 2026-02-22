@@ -3,7 +3,7 @@
 import { createContext, useContext, ReactNode, useState, useCallback, useRef, useEffect } from 'react';
 import { useDocumentHighlights } from '@/hooks/use-document-highlights';
 import { CreateHighlightRequest, Highlight, UpdateHighlightRequest } from '@/types';
-import { IHighlight } from 'react-pdf-highlighter-extended';
+import type { Highlight as IHighlight } from 'react-pdf-highlighter-extended';
 import { mapHighlightToIHighlight } from '@/utils/mapDataTo';
 
 interface DocumentContextType {
@@ -17,7 +17,7 @@ interface DocumentContextType {
   updateHighlight: (id: string, data: UpdateHighlightRequest) => Promise<boolean>;
   deleteHighlight: (id: string) => Promise<boolean>;
   scrollToHighlight: () => void;
-  scrollViewerTo: React.RefObject<(highlight: IHighlight) => void>;
+  scrollViewerTo: React.MutableRefObject<((highlight: IHighlight) => void) | null>;
   iHighlights: IHighlight[];
   updateHash: (id: string) => void;
 }
@@ -42,7 +42,7 @@ export function DocumentProvider({
     updateHighlight,
     deleteHighlight
   } = useDocumentHighlights(documentId);
-  const scrollViewerTo = useRef((highlight: IHighlight) => { });
+  const scrollViewerTo = useRef<((highlight: IHighlight) => void) | null>(null);
   const [iHighlights, setIHighlights] = useState<IHighlight[]>([]);
 
   const parseIdFromHash = () => window.location.hash.slice('#highlight-'.length);
@@ -51,16 +51,15 @@ export function DocumentProvider({
     document.location.hash = `highlight-${id}`;
   };
 
-  const getHighlightById = (id: string) => {
-    return iHighlights.find((highlight) => highlight.id === id);
-  };
-
   const scrollToHighlight = useCallback(() => {
-    const highlight = getHighlightById(parseIdFromHash());
-    if (highlight) {
+    const highlightId = parseIdFromHash();
+    if (!highlightId) return;
+
+    const highlight = iHighlights.find((h) => h.id === highlightId);
+    if (highlight && scrollViewerTo.current) {
       scrollViewerTo.current(highlight);
     }
-  }, []);
+  }, [iHighlights]);
 
   useEffect(() => {
     setIHighlights(highlights.map(mapHighlightToIHighlight));
