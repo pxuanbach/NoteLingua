@@ -1,20 +1,26 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Loading, Button } from '@/components/templates';
 import { useDocumentContext } from '@/contexts/document-context';
 import { Document, Highlight, ReactPdfHighlight, HighlightContent } from '@/types';
 import {
   PdfLoader,
   PdfHighlighter,
-  Highlight as PDFHighlight,
-  Popup,
+  TextHighlight,
   AreaHighlight,
+  MonitoredHighlightContainer,
+  useHighlightContainerContext,
 } from 'react-pdf-highlighter-extended';
 
-import type { Content, IHighlight, NewHighlight, ScaledPosition } from 'react-pdf-highlighter-extended';
-import 'react-pdf-highlighter-extended/dist/style.css';
-import { mapHighlightToIHighlight } from '@/utils/mapDataTo';
+import type {
+  Content,
+  Highlight as IHighlight,
+  GhostHighlight,
+  PdfSelection,
+  ViewportHighlight,
+} from 'react-pdf-highlighter-extended';
+import 'react-pdf-highlighter-extended/dist/esm/style/PdfHighlighter.css';
 
 interface PdfViewerProps {
   document: Document;
@@ -44,7 +50,8 @@ export function PdfViewer({
   onHighlightDelete,
   onNewHighlight,
 }: PdfViewerProps) {
-  const { iHighlights, scrollToHighlight, scrollViewerTo } = useDocumentContext();
+  const { iHighlights, highlights, scrollToHighlight, scrollViewerTo } = useDocumentContext();
+  const [ghostHighlight, setGhostHighlight] = useState<GhostHighlight | null>(null);
 
   const getFileUrl = useCallback(() => {
     return `${process.env.NEXT_PUBLIC_API_URL}/uploads/${doc.file_name}`;
@@ -58,101 +65,160 @@ export function PdfViewer({
     };
   }, [scrollToHighlight]);
 
-  const resetHash = () => {
-    window.location.hash = '';
+  const handleLoadingProgress = () => <Loading />;
+
+  const handleSelection = (selection: PdfSelection) => {
+    const ghostHighlight = selection.makeGhostHighlight();
+    setGhostHighlight(ghostHighlight);
   };
+
+  const handleCreateGhostHighlight = (ghost: GhostHighlight) => {
+    setGhostHighlight(ghost);
+  };
+
+  const handleRemoveGhostHighlight = () => {
+    setGhostHighlight(null);
+  };
+
+  const selectionTipContent =
+    ghostHighlight && ghostHighlight.content.text ? (
+      <SelectionTip
+        content={ghostHighlight.content}
+        onConfirm={() => {
+          if (ghostHighlight.content.text) {
+            onNewHighlight?.({
+              content: ghostHighlight.content as HighlightContent,
+              position: ghostHighlight.position,
+            });
+            setGhostHighlight(null);
+          }
+        }}
+      />
+    ) : undefined;
 
   return (
     <div className="h-full w-full bg-gray-100 dark:bg-gray-950 overflow-hidden relative">
-      <PdfLoader url={getFileUrl()} beforeLoad={<Loading />}>
+      <PdfLoader document={getFileUrl()} beforeLoad={handleLoadingProgress}>
         {(pdfDocument) => (
           <PdfHighlighter
             pdfDocument={pdfDocument}
             enableAreaSelection={(event) => event.altKey}
-            onScrollChange={resetHash}
-            scrollRef={(scrollTo) => {
-              scrollViewerTo.current = scrollTo;
+            onScrollAway={() => {
+              // Called when user scrolls away from auto-scroll
+            }}
+            onSelection={handleSelection}
+            onCreateGhostHighlight={handleCreateGhostHighlight}
+            onRemoveGhostHighlight={handleRemoveGhostHighlight}
+            selectionTip={selectionTipContent}
+            highlights={iHighlights}
+            utilsRef={(utils) => {
+              if (scrollViewerTo) {
+                scrollViewerTo.current = (highlight: IHighlight) => {
+                  utils.scrollToHighlight(highlight);
+                };
+              }
               scrollToHighlight();
             }}
-            onSelectionFinished={(position, content, hideTipAndSelection, transformSelection) => {
-              transformSelection();
-
-              return (
-                <SelectionTip
-                  content={content}
-                  onConfirm={() => {
-                    if (content.text) {
-                      onNewHighlight?.({ content: content as HighlightContent, position });
-                      hideTipAndSelection();
-                    }
-                  }}
-                />
-              );
-            }}
-            highlightTransform={(
-              highlight,
-              index,
-              setTip,
-              hideTip,
-              viewportToScaled,
-              screenshot,
-              isScrolledTo,
-            ) => {
-              const isTextHighlight = !highlight.content?.image;
-
-              const component = isTextHighlight ? (
-                <PDFHighlight
-                  isScrolledTo={isScrolledTo}
-                  position={highlight.position}
-                  comment={highlight.comment}
-                />
-              ) : (
-                <AreaHighlight
-                  isScrolledTo={isScrolledTo}
-                  highlight={highlight}
-                  onChange={(boundingRect) => { }}
-                />
-              );
-
-              return (
-                <Popup
-                  popupContent={
-                    <HighlightPopup
-                      highlightId={highlight.id as string}
-                      onEdit={onHighlightEdit}
-                      onDelete={onHighlightDelete}
-                    />
-                  }
-                  onMouseOver={(popupContent) => setTip(highlight, (highlight) => popupContent)}
-                  onMouseOut={hideTip}
-                  key={index}
-                >
-                  {component}
-                </Popup>
-              );
-            }}
-            highlights={iHighlights}
-          />
+          >
+            <HighlightContainer
+              highlights={highlights}
+              onHighlightEdit={onHighlightEdit}
+              onHighlightDelete={onHighlightDelete}
+            />
+          </PdfHighlighter>
         )}
       </PdfLoader>
     </div>
   );
 }
 
+function HighlightContainer({
+  highlights,
+  onHighlightEdit,
+  onHighlightDelete,
+}: {
+  highlights: Highlight[];
+  onHighlightEdit?: (highlight: Highlight) => void;
+  onHighlightDelete?: (highlightId: string) => void;
+}) {
+  return (
+    <HighlightCellRenderer
+      highlights={highlights}
+      onHighlightEdit={onHighlightEdit}
+      onHighlightDelete={onHighlightDelete}
+    />
+  );
+}
+
+function HighlightCellRenderer({
+  highlights,
+  onHighlightEdit,
+  onHighlightDelete,
+}: {
+  highlights: Highlight[];
+  onHighlightEdit?: (highlight: Highlight) => void;
+  onHighlightDelete?: (highlightId: string) => void;
+}) {
+  const containerContext = useHighlightContainerContext();
+  const { highlight: viewportHighlight, isScrolledTo } = containerContext;
+
+  // Find matching database highlight
+  const dbHighlight = highlights.find((h) => h._id === viewportHighlight.id);
+  const [showPopup, setShowPopup] = useState(false);
+
+  const isTextHighlight = !viewportHighlight.content?.image;
+
+  return (
+    <MonitoredHighlightContainer
+      onMouseEnter={() => setShowPopup(true)}
+      onMouseLeave={() => setShowPopup(false)}
+      highlightTip={
+        showPopup && dbHighlight
+          ? {
+            position: viewportHighlight.position,
+            content: (
+              <HighlightPopup
+                highlight={dbHighlight}
+                onEdit={onHighlightEdit}
+                onDelete={onHighlightDelete}
+              />
+            ),
+          }
+          : undefined
+      }
+    >
+      {isTextHighlight ? (
+        <TextHighlight
+          highlight={viewportHighlight as ViewportHighlight}
+          isScrolledTo={isScrolledTo}
+          onClick={() => {
+            if (dbHighlight) {
+              onHighlightEdit?.(dbHighlight);
+            }
+          }}
+        />
+      ) : (
+        <AreaHighlight
+          highlight={viewportHighlight as ViewportHighlight}
+          onChange={() => {
+            // Handle area highlight change
+          }}
+          isScrolledTo={isScrolledTo}
+        />
+      )}
+    </MonitoredHighlightContainer>
+  );
+}
+
 function HighlightPopup({
-  highlightId,
+  highlight,
   onEdit,
   onDelete,
 }: {
-  highlightId: string;
+  highlight: Highlight;
   onEdit?: (h: Highlight) => void;
   onDelete?: (id: string) => void;
 }) {
-  const { highlights } = useDocumentContext();
-  const highlight = highlights.find((h) => h._id === highlightId);
-
-  if (!highlight) return null;
-
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl p-4 min-w-[300px] z-[1000] animate-in fade-in slide-in-from-bottom-2 duration-200">
       <div className="mb-4">
