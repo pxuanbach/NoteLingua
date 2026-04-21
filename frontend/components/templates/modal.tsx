@@ -30,7 +30,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
       {/* Modal */}
       <div
         className={cn(
-          'relative bg-background dark:bg-background rounded-lg shadow-lg w-full mx-4 border border-border dark:border-border',
+          'relative bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full mx-4 border border-border dark:border-border',
           sizeClasses[size],
           className
         )}
