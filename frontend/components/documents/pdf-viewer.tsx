@@ -270,14 +270,18 @@ function HighlightCellRenderer({
         <TextHighlight
           highlight={viewportHighlight as ViewportHighlight}
           isScrolledTo={isScrolledTo}
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             if (dbHighlight) {
               setShowPopup(true);
             }
           }}
         />
       ) : (
-        <div onClick={() => { if (dbHighlight) setShowPopup(true); }}>
+        <div onClick={(e) => {
+          e.stopPropagation();
+          if (dbHighlight) setShowPopup(true);
+        }}>
           <AreaHighlight
             highlight={viewportHighlight as ViewportHighlight}
             onChange={() => {}}
