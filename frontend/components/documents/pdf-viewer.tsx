@@ -62,44 +62,69 @@ function TipManager({
 }) {
   const utils = usePdfHighlighterContext();
 
+  // Clear tip on mount to ensure clean state
   useEffect(() => {
-    console.log('[TipManager] useEffect, isSelecting:', isSelecting, 'selectionData:', selectionData?.content?.text);
+    utils.setTip(null);
+  }, [utils]);
 
-    // Clear tip when not selecting
-    if (!isSelecting) {
-      utils.setTip(null);
-      return;
-    }
+  // Effect to show tip when selection is made
+  useEffect(() => {
+    // Use setTimeout to ensure state has updated before we try to show tip
+    const timer = setTimeout(() => {
+      console.log('[TipManager] timeout callback, isSelecting:', isSelecting, 'selectionData:', selectionData?.content?.text);
 
-    if (!selectionData) {
-      console.log('[TipManager] isSelecting=true but no selectionData yet');
-      return;
-    }
-
-    if (selectionData.content.text) {
-      const viewer = utils.getViewer();
-      console.log('[TipManager] viewer:', !!viewer);
-
-      if (!viewer) {
-        console.log('[TipManager] No viewer - NOT setting tip');
+      // Clear tip when not selecting
+      if (!isSelecting) {
+        utils.setTip(null);
         return;
       }
 
-      // Get page info
-      const pageNumber = selectionData.position.boundingRect.pageNumber;
-      console.log('[TipManager] pageNumber:', pageNumber);
+      // Double check selectionData exists
+      if (!selectionData || !selectionData.content.text) {
+        console.log('[TipManager] No selectionData yet');
+        return;
+      }
 
-      // Convert scaled position to viewport
+      const viewer = utils.getViewer();
+      if (!viewer) {
+        console.log('[TipManager] No viewer');
+        return;
+      }
+
+      const pageNumber = selectionData.position.boundingRect.pageNumber;
       const viewportPosition = scaledPositionToViewport(selectionData.position, viewer);
-      console.log('[TipManager] viewportPosition.boundingRect:', viewportPosition.boundingRect);
 
       utils.setTip({
         position: viewportPosition,
         content: <SelectionTip onConfirm={onConfirm} content={selectionData.content} />,
       });
       console.log('[TipManager] setTip called');
-    }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [isSelecting, selectionData, utils, onConfirm]);
+
+  // Effect to close tip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Don't close if clicking inside the tip
+      if (target.closest('.PdfHighlighter__tip-container')) {
+        return;
+      }
+      // Don't close if clicking on PDF content (selection might be happening)
+      if (target.closest('.page')) {
+        return;
+      }
+      // Close the tip
+      utils.setTip(null);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [utils]);
 
   return null;
 }
