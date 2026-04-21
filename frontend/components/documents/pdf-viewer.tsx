@@ -53,19 +53,17 @@ function SelectionTip({ onConfirm, content }: { onConfirm: () => void; content: 
 // NEW: Separate component to manage tip state - lives inside PdfHighlighter to access context
 function TipManager({
   isSelecting,
-  selectionVersion,
   selectionData,
   onConfirm,
 }: {
   isSelecting: boolean;
-  selectionVersion: number;
   selectionData: { content: Content; position: any } | null;
   onConfirm: () => void;
 }) {
   const utils = usePdfHighlighterContext();
 
   useEffect(() => {
-    console.log('[TipManager] useEffect, isSelecting:', isSelecting, 'selectionVersion:', selectionVersion, 'selectionData:', selectionData?.content?.text);
+    console.log('[TipManager] useEffect, isSelecting:', isSelecting, 'selectionData:', selectionData?.content?.text);
 
     // Clear tip when not selecting
     if (!isSelecting) {
@@ -89,7 +87,6 @@ function TipManager({
 
       // Get page info
       const pageNumber = selectionData.position.boundingRect.pageNumber;
-      const pageView = viewer.getPageView(pageNumber - 1);
       console.log('[TipManager] pageNumber:', pageNumber);
 
       // Convert scaled position to viewport
@@ -102,7 +99,7 @@ function TipManager({
       });
       console.log('[TipManager] setTip called');
     }
-  }, [isSelecting, selectionVersion, selectionData, utils, onConfirm]);
+  }, [isSelecting, selectionData, utils, onConfirm]);
 
   return null;
 }
@@ -115,10 +112,9 @@ export function PdfViewer({
 }: PdfViewerProps) {
   const { iHighlights, highlights, scrollToHighlight, scrollViewerTo } = useDocumentContext();
 
-  // Use refs to track selection data - doesn't trigger re-render immediately
-  const selectionDataRef = useRef<{ content: Content; position: any } | null>(null);
+  // State to track selection data - triggers re-render when updated
+  const [selectionData, setSelectionData] = useState<{ content: Content; position: any } | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
-  const [selectionVersion, setSelectionVersion] = useState(0);
 
   const getFileUrl = useCallback(() => {
     return `${process.env.NEXT_PUBLIC_API_URL}/uploads/${doc.file_name}`;
@@ -141,26 +137,22 @@ export function PdfViewer({
     const ghost = selection.makeGhostHighlight();
     console.log('[PdfViewer] ghost created:', ghost.content.text);
 
-    // Store selection data in ref
-    selectionDataRef.current = {
+    // Store selection data in state
+    setSelectionData({
       content: ghost.content,
       position: ghost.position,
-    };
-
-    // Trigger re-render to mount TipManager and force useEffect to re-run
+    });
     setIsSelecting(true);
-    setSelectionVersion(v => v + 1);
   }, []);
 
   const handleCreateGhostHighlight = useCallback((ghost: GhostHighlight) => {
     console.log('[PdfViewer] onCreateGhostHighlight');
-    // Also store in ref
-    selectionDataRef.current = {
+    // Also store in state
+    setSelectionData({
       content: ghost.content,
       position: ghost.position,
-    };
+    });
     setIsSelecting(true);
-    setSelectionVersion(v => v + 1);
   }, []);
 
   const handleRemoveGhostHighlight = useCallback(() => {
@@ -170,19 +162,18 @@ export function PdfViewer({
 
   const handleConfirm = useCallback(() => {
     console.log('[PdfViewer] handleConfirm');
-    if (selectionDataRef.current?.content.text) {
+    if (selectionData?.content.text) {
       onNewHighlight?.({
-        content: selectionDataRef.current.content as HighlightContent,
-        position: selectionDataRef.current.position,
+        content: selectionData.content as HighlightContent,
+        position: selectionData.position,
       });
     }
     // Clear selection
-    selectionDataRef.current = null;
+    setSelectionData(null);
     setIsSelecting(false);
-    setSelectionVersion(0);
-  }, [onNewHighlight]);
+  }, [selectionData, onNewHighlight]);
 
-  console.log('[PdfViewer] RENDER - isSelecting:', isSelecting, 'selectionData:', selectionDataRef.current?.content?.text);
+  console.log('[PdfViewer] RENDER - isSelecting:', isSelecting, 'selectionData:', selectionData?.content?.text);
 
   return (
     <div className="h-full w-full bg-muted dark:bg-muted overflow-hidden relative">
@@ -208,8 +199,7 @@ export function PdfViewer({
             {/* Always render TipManager, control visibility via state */}
             <TipManager
               isSelecting={isSelecting}
-              selectionVersion={selectionVersion}
-              selectionData={selectionDataRef.current}
+              selectionData={selectionData}
               onConfirm={handleConfirm}
             />
             <HighlightContainer
