@@ -23,24 +23,24 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 dark:bg-black/70 transition-opacity"
+        className="fixed inset-0 bg-black/70 dark:bg-black/80 transition-opacity"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div
         className={cn(
-          'relative bg-white dark:bg-gray-900 rounded-lg shadow-lg w-full mx-4 border border-gray-200 dark:border-gray-700',
+          'relative bg-background dark:bg-background rounded-lg shadow-lg w-full mx-4 border border-border dark:border-border',
           sizeClasses[size],
           className
         )}
       >
         {title && (
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+          <div className="flex items-center justify-between p-4 border-b border-border dark:border-border">
+            <h2 className="text-lg font-semibold text-foreground dark:text-foreground">{title}</h2>
             <button
               onClick={onClose}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer transition-colors"
+              className="text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground cursor-pointer transition-colors"
             >
               ✕
             </button>
