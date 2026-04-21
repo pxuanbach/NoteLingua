@@ -67,10 +67,14 @@ function TipManager({
   useEffect(() => {
     console.log('[TipManager] useEffect, isSelecting:', isSelecting, 'selectionVersion:', selectionVersion, 'selectionData:', selectionData?.content?.text);
 
-    if (!isSelecting || !selectionData) {
-      if (isSelecting && !selectionData) {
-        console.log('[TipManager] isSelecting=true but no selectionData yet');
-      }
+    // Clear tip when not selecting
+    if (!isSelecting) {
+      utils.setTip(null);
+      return;
+    }
+
+    if (!selectionData) {
+      console.log('[TipManager] isSelecting=true but no selectionData yet');
       return;
     }
 
@@ -201,15 +205,13 @@ export function PdfViewer({
               }
             }}
           >
-            {/* Only show TipManager when we have selection data */}
-            {isSelecting && selectionDataRef.current && (
-              <TipManager
-                isSelecting={isSelecting}
-                selectionVersion={selectionVersion}
-                selectionData={selectionDataRef.current}
-                onConfirm={handleConfirm}
-              />
-            )}
+            {/* Always render TipManager, control visibility via state */}
+            <TipManager
+              isSelecting={isSelecting}
+              selectionVersion={selectionVersion}
+              selectionData={selectionDataRef.current}
+              onConfirm={handleConfirm}
+            />
             <HighlightContainer
               highlights={highlights}
               onHighlightEdit={onHighlightEdit}
