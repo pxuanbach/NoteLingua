@@ -61,47 +61,44 @@ function TipManager({
   onConfirm: () => void;
 }) {
   const utils = usePdfHighlighterContext();
+  // Use ref to track if we should show tip - avoids stale closure issues
+  const shouldShowTipRef = useRef(false);
 
-  // Clear tip on mount to ensure clean state
+  // Update ref when state changes
   useEffect(() => {
-    utils.setTip(null);
-  }, [utils]);
+    shouldShowTipRef.current = isSelecting && !!selectionData?.content?.text;
+    console.log('[TipManager] ref updated, shouldShowTip:', shouldShowTipRef.current);
+  }, [isSelecting, selectionData]);
 
   // Effect to show tip when selection is made
   useEffect(() => {
-    // Use setTimeout to ensure state has updated before we try to show tip
-    const timer = setTimeout(() => {
-      console.log('[TipManager] timeout callback, isSelecting:', isSelecting, 'selectionData:', selectionData?.content?.text);
+    console.log('[TipManager] show effect running, shouldShowTipRef:', shouldShowTipRef.current);
 
-      // Clear tip when not selecting
-      if (!isSelecting) {
-        utils.setTip(null);
-        return;
-      }
+    // If we shouldn't show tip, clear it
+    if (!shouldShowTipRef.current) {
+      utils.setTip(null);
+      return;
+    }
 
-      // Double check selectionData exists
-      if (!selectionData || !selectionData.content.text) {
-        console.log('[TipManager] No selectionData yet');
-        return;
-      }
+    // We need to show tip
+    if (!selectionData || !selectionData.content.text) {
+      return;
+    }
 
-      const viewer = utils.getViewer();
-      if (!viewer) {
-        console.log('[TipManager] No viewer');
-        return;
-      }
+    const viewer = utils.getViewer();
+    if (!viewer) {
+      console.log('[TipManager] No viewer');
+      return;
+    }
 
-      const pageNumber = selectionData.position.boundingRect.pageNumber;
-      const viewportPosition = scaledPositionToViewport(selectionData.position, viewer);
+    const pageNumber = selectionData.position.boundingRect.pageNumber;
+    const viewportPosition = scaledPositionToViewport(selectionData.position, viewer);
 
-      utils.setTip({
-        position: viewportPosition,
-        content: <SelectionTip onConfirm={onConfirm} content={selectionData.content} />,
-      });
-      console.log('[TipManager] setTip called');
-    }, 0);
-
-    return () => clearTimeout(timer);
+    utils.setTip({
+      position: viewportPosition,
+      content: <SelectionTip onConfirm={onConfirm} content={selectionData.content} />,
+    });
+    console.log('[TipManager] setTip called');
   }, [isSelecting, selectionData, utils, onConfirm]);
 
   // Effect to close tip when clicking outside
@@ -182,7 +179,8 @@ export function PdfViewer({
 
   const handleRemoveGhostHighlight = useCallback(() => {
     console.log('[PdfViewer] onRemoveGhostHighlight');
-    // Don't clear selectionDataRef - we need it for the tip!
+    // Don't do anything - let the next selection update handle state
+    // This prevents the tip from being cleared prematurely
   }, []);
 
   const handleConfirm = useCallback(() => {
