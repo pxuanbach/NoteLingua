@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Button } from './button';
 import { logoutAction } from '@/lib/actions/auth';
+import { useTheme } from '@/contexts/theme-context';
 import { User } from '@/types';
 
 interface NavbarProps {
@@ -10,6 +11,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ user }: NavbarProps) {
+  const { theme, toggleTheme } = useTheme();
   const handleLogout = async () => {
     await logoutAction();
   };
@@ -69,6 +71,13 @@ export function Navbar({ user }: NavbarProps) {
                 </Link>
               </div>
             )}
+            <button
+              onClick={toggleTheme}
+              className="flex h-9 w-9 items-center justify-center rounded-md border hover:bg-accent transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
           </div>
         </div>
       </div>

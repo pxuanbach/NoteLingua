@@ -2,13 +2,22 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { PdfViewer } from '@/components/documents/pdf-viewer';
 import { Sidebar } from '@/components/documents/sidebar';
 import { AddEditVocabForm } from '@/components/vocabularies/add-edit-vocab-form';
 import { Modal, Button, Loading, ConfirmModal } from '@/components/templates';
 import { Document, Highlight, Vocab, SourceType, ReactPdfHighlight } from '@/types';
 import { DocumentProvider, useDocumentContext } from '@/contexts/document-context';
+
+// Dynamic import to avoid SSR issues with pdfjs-dist
+const PdfViewer = dynamic(
+  () => import('@/components/documents/pdf-viewer').then((mod) => mod.PdfViewer),
+  {
+    ssr: false,
+    loading: () => <Loading />,
+  }
+);
 
 interface DocumentDetailTemplateProps {
   document: Document;
@@ -122,9 +131,9 @@ function DocumentDetailContent({ document }: { document: Document }) {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white dark:bg-gray-950 overflow-hidden font-sans">
+    <div className="h-screen flex flex-col bg-background overflow-hidden font-sans">
       {/* Header */}
-      <header className="h-14 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-20">
+      <header className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0 bg-background/80 backdrop-blur-md z-20">
         <div className="flex items-center gap-5">
           <Button
             variant="ghost"
@@ -146,8 +155,8 @@ function DocumentDetailContent({ document }: { document: Document }) {
               />
             </svg>
           </Button>
-          <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
-          <h1 className="font-bold text-gray-900 dark:text-gray-100 truncate max-w-sm tracking-tight">
+          <div className="h-6 w-px bg-border mx-1" />
+          <h1 className="font-bold text-foreground truncate max-w-sm tracking-tight">
             {document.file_name}
           </h1>
         </div>
@@ -205,8 +214,8 @@ function DocumentDetailContent({ document }: { document: Document }) {
 
           {showSidebar && (
             <>
-              <PanelResizeHandle className="w-1.5 hover:bg-primary/30 transition-colors bg-gray-50 dark:bg-gray-900 relative group">
-                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gray-200 dark:bg-gray-800 group-hover:bg-primary/50" />
+              <PanelResizeHandle className="w-1.5 hover:bg-primary/30 transition-colors bg-muted relative group">
+                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border group-hover:bg-primary/50" />
               </PanelResizeHandle>
               <Panel defaultSize={25} minSize={20}>
                 <Sidebar

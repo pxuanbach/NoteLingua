@@ -94,8 +94,8 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
       <div
         className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors
           ${dragActive
-            ? 'border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-900/20'
-            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+            ? 'border-primary bg-primary/5 dark:bg-primary/10'
+            : 'border-border hover:border-primary/50'
           }
           ${isUploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
         `}
@@ -117,12 +117,12 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
         {isUploading ? (
           <div className="flex flex-col items-center">
             <Loading />
-            <p className="text-gray-600 dark:text-gray-400">Uploading document...</p>
+            <p className="text-muted-foreground mt-4">Uploading document...</p>
           </div>
         ) : (
           <div className="flex flex-col items-center">
             <svg
-              className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4"
+              className="w-12 h-12 text-muted-foreground mb-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -135,10 +135,10 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
               />
             </svg>
 
-            <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+            <p className="text-lg font-medium text-foreground mb-2">
               Upload your document
             </p>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-muted-foreground mb-4">
               Drag and drop your PDF or text file here, or click to browse
             </p>
 
@@ -146,7 +146,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
               Choose File
             </Button>
 
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+            <p className="text-sm text-muted-foreground mt-4">
               Supported formats: PDF, TXT (max 10MB)
             </p>
           </div>

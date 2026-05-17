@@ -71,7 +71,7 @@ export function DocumentsList({
     if (extension === 'pdf') {
       return (
         <svg
-          className="w-8 h-8 text-red-600 dark:text-red-400"
+          className="w-8 h-8 text-red-500"
           fill="currentColor"
           viewBox="0 0 20 20"
         >
@@ -82,7 +82,7 @@ export function DocumentsList({
 
     return (
       <svg
-        className="w-8 h-8 text-gray-600 dark:text-gray-400"
+        className="w-8 h-8 text-muted-foreground"
         fill="currentColor"
         viewBox="0 0 20 20"
       >
@@ -114,8 +114,8 @@ export function DocumentsList({
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">My Documents</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <h2 className="text-xl font-semibold text-foreground">My Documents</h2>
+        <p className="text-sm text-muted-foreground">
           {pagination.total} document{pagination.total !== 1 ? 's' : ''} total
         </p>
       </div>
@@ -124,16 +124,16 @@ export function DocumentsList({
         {data.map((document) => (
           <div
             key={document._id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors bg-white dark:bg-gray-800"
+            className="flex items-center justify-between p-4 border border-border rounded-lg hover:border-border/80 transition-colors bg-card"
           >
             <div className="flex items-center space-x-4">
               {getFileIcon(document.file_name)}
 
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                <h3 className="text-sm font-medium text-foreground truncate">
                   {document.file_name}
                 </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   Imported {formatDate(document.created_at)}
                 </p>
               </div>

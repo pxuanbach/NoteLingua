@@ -99,13 +99,13 @@ export function RegisterForm() {
           </div>
           
           {formState.error && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+            <div className="text-sm text-red-600 dark:text-red-400 dark:bg-red-900/30 p-3 rounded-md">
               {formState.error}
             </div>
           )}
           
           {formState.success && (
-            <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md">
+            <div className="text-sm text-green-600 dark:text-green-400 dark:bg-green-900/30 p-3 rounded-md">
               {formState.success}
             </div>
           )}

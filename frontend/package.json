@@ -15,14 +15,16 @@
     "js-cookie": "^3.0.5",
     "next": "15.5.9",
     "patch-package": "^8.0.1",
+    "pdfjs-dist": "4.4.168",
     "query-string": "^9.3.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-pdf-highlighter-extended": "^8.1.0",
+    "react-pdf-highlighter-extended": "file:../.github/react-pdf-highlighter-extended",
     "react-resizable-panels": "^3.0.6",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^18",
